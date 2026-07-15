@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Stylized Hora Ring (12 divisions) -->
+    <path
+        android:strokeColor="@color/hora_ring"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,24 L54,18 M54,84 L54,90 M24,54 L18,54 M84,54 L90,54 M31.5,31.5 L27,27 M76.5,76.5 L81,81 M31.5,76.5 L27,81 M76.5,31.5 L81,27 M39,26 L36,20 M69,26 L72,20 M39,82 L36,88 M69,82 L72,88" />
+
+    <path
+        android:strokeColor="@color/hora_ring"
+        android:strokeWidth="0.8"
+        android:pathData="M54,54m-36,0a36,36 0,1 1,72 0a36,36 0,1 1,-72 0" />
+
+    <!-- Sun Rays -->
+    <path
+        android:fillColor="@color/sun_rays"
+        android:pathData="M54,34l2,6h4l-3,3l1,5l-4-3l-4,3l1-5l-3-3h4z M68.1,40l-0.5,6.3l3.5,1.9l-3.9,0.9l0.5,6.3l-2.6-3.4l-3.9,0.9l3.5,1.9l-0.5,6.3l-2.6-3.4z M39.9,40l0.5,6.3l-3.5,1.9l3.9,0.9l-0.5,6.3l2.6-3.4l3.9,0.9l-3.5,1.9l0.5,6.3l2.6-3.4z" />
+
+    <!-- Sun Center -->
+    <path
+        android:fillColor="@color/sun_center"
+        android:pathData="M54,54m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0" />
+
+</vector>
