@@ -8,7 +8,11 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 
 interface HoraApiService {
     @GET("/api/v1/all")
-    suspend fun getAllRaw(@Query("lat") lat: Double, @Query("lon") lon: Double): ResponseBody
+    suspend fun getAllRaw(
+        @Query("lat") lat: Double, 
+        @Query("lon") lon: Double,
+        @Query("lang") lang: String = "en"
+    ): ResponseBody
 
     @GET("/api/v1/kundali")
     suspend fun getKundali(@Query("lat") lat: Double, @Query("lon") lon: Double): Map<String, Any>

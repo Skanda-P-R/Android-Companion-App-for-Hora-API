@@ -23,7 +23,7 @@ class HomeViewModel(private val repo: HoraRepository) : ViewModel() {
             val dataStore = DataStoreManager(context)
             val lang = dataStore.langFlow.first()
 
-            val panchangaDeferred = async { repo.fetchAllRaw(lat, lon) }
+            val panchangaDeferred = async { repo.fetchAllRaw(lat, lon, lang) }
             val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, lang) }
 
             val res = panchangaDeferred.await()

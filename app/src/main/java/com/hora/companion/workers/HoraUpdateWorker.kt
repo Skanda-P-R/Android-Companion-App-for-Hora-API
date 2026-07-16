@@ -20,7 +20,7 @@ class HoraUpdateWorker(appContext: Context, params: WorkerParameters) : Coroutin
         val location = dataStoreManager.locationFlow.first() ?: (12.9716 to 77.5946)
         val lang = dataStoreManager.langFlow.first()
         
-        val panchangaDeferred = async { repo.fetchAllRaw(location.first, location.second) }
+        val panchangaDeferred = async { repo.fetchAllRaw(location.first, location.second, lang) }
         val kundaliDeferred = async { repo.fetchKundaliImage(location.first, location.second, lang) }
 
         val res = panchangaDeferred.await()

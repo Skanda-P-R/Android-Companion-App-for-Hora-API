@@ -49,7 +49,7 @@ class HoraWidget : GlanceAppWidget() {
                 // Header
                 Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "${state.horaSymbol} ${TranslationUtils.translate(state.hora, lang, "planet")}",
+                        text = "${state.horaSymbol} ${state.hora}",
                         style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = GlanceTheme.colors.onSurface)
                     )
                     Spacer(modifier = GlanceModifier.defaultWeight())
@@ -63,32 +63,45 @@ class HoraWidget : GlanceAppWidget() {
 
                 // Sub-header
                 val endsLabel = TranslationUtils.translate("Ends", lang)
-                val nextLabel = TranslationUtils.translate("Next Hora", lang)
+                val nextLabel = TranslationUtils.translate("Next", lang)
                 Text(
-                    text = "$endsLabel ${state.horaEnds}   •   $nextLabel ${TranslationUtils.translate(state.horaNext, lang, "planet")}",
+                    text = "$endsLabel ${state.horaEnds}   •   $nextLabel ${state.horaNext}",
                     style = TextStyle(fontSize = 11.sp, color = GlanceTheme.colors.onSurfaceVariant)
                 )
 
                 Spacer(modifier = GlanceModifier.height(6.dp))
 
-                // Grid
+                // Three Columns Grid
                 Row(modifier = GlanceModifier.fillMaxWidth()) {
+                    // Column 1
                     Column(modifier = GlanceModifier.defaultWeight()) {
-                        WidgetInfoItem(TranslationUtils.translate("Tithi", lang), TranslationUtils.translate(state.tithi, lang, "tithi"))
+                        WidgetInfoItem(TranslationUtils.translate("Ayana", lang), state.ayana)
                         Spacer(modifier = GlanceModifier.height(5.dp))
-                        WidgetInfoItem(TranslationUtils.translate("Rahu Kalam", lang), state.rahuKalam)
+                        WidgetInfoItem(TranslationUtils.translate("Rutu", lang), state.rutu)
                         Spacer(modifier = GlanceModifier.height(4.dp))
-                        WidgetInfoItem(TranslationUtils.translate("Yamaganda", lang), state.yamaganda)
+                        WidgetInfoItem(TranslationUtils.translate("Masa", lang), state.masa)
                     }
 
-                    Spacer(modifier = GlanceModifier.width(16.dp))
+                    Spacer(modifier = GlanceModifier.width(8.dp))
 
+                    // Column 2
                     Column(modifier = GlanceModifier.defaultWeight()) {
-                        WidgetInfoItem(TranslationUtils.translate("Nakshatra", lang), TranslationUtils.translate(state.nakshatra, lang, "nakshatra"))
+                        WidgetInfoItem(TranslationUtils.translate("Tithi", lang), state.tithi)
                         Spacer(modifier = GlanceModifier.height(5.dp))
-                        WidgetInfoItem(TranslationUtils.translate("Abhijit", lang), state.abhijit)
+                        WidgetInfoItem(TranslationUtils.translate("Nakshatra", lang), state.nakshatra)
                         Spacer(modifier = GlanceModifier.height(4.dp))
                         WidgetInfoItem(TranslationUtils.translate("Sunrise", lang), "${state.sunrise} - ${state.sunset}")
+                    }
+
+                    Spacer(modifier = GlanceModifier.width(8.dp))
+
+                    // Column 3
+                    Column(modifier = GlanceModifier.defaultWeight()) {
+                        WidgetInfoItem(TranslationUtils.translate("Rahu Kalam", lang), state.rahuKalam)
+                        Spacer(modifier = GlanceModifier.height(5.dp))
+                        WidgetInfoItem(TranslationUtils.translate("Yamaganda", lang), state.yamaganda)
+                        Spacer(modifier = GlanceModifier.height(4.dp))
+                        WidgetInfoItem(TranslationUtils.translate("Abhijit", lang), state.abhijit)
                     }
                 }
 
@@ -97,12 +110,12 @@ class HoraWidget : GlanceAppWidget() {
                 // Footer
                 Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "🌙 ${TranslationUtils.translate(state.moonRasi, lang, "rasi")}",
+                        text = "🌙 ${state.moonRasi}",
                         style = TextStyle(fontSize = 10.sp, color = GlanceTheme.colors.onSurfaceVariant)
                     )
                     Spacer(modifier = GlanceModifier.defaultWeight())
                     Text(
-                        text = "☀️ ${TranslationUtils.translate(state.sunRasi, lang, "rasi")}",
+                        text = "☀️ ${state.sunRasi}",
                         style = TextStyle(fontSize = 10.sp, color = GlanceTheme.colors.onSurfaceVariant)
                     )
                 }
@@ -115,11 +128,12 @@ class HoraWidget : GlanceAppWidget() {
         Column {
             Text(
                 text = label.uppercase(), 
-                style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = GlanceTheme.colors.secondary)
+                style = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GlanceTheme.colors.secondary)
             )
             Text(
                 text = value, 
-                style = TextStyle(fontSize = 12.sp, color = GlanceTheme.colors.onSurface)
+                style = TextStyle(fontSize = 10.sp, color = GlanceTheme.colors.onSurface),
+                maxLines = 1
             )
         }
     }

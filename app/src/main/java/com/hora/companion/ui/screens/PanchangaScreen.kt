@@ -34,19 +34,30 @@ fun PanchangaScreen(navController: NavController, state: PanchangaState, lang: S
                 .verticalScroll(rememberScrollState())
         ) {
             PanchangaSection(TranslationUtils.translate("Limbs", lang), listOf(
-                TranslationUtils.translate("Tithi", lang) to TranslationUtils.translate(state.tithi, lang, "tithi"),
-                TranslationUtils.translate("Nakshatra", lang) to TranslationUtils.translate(state.nakshatra, lang, "nakshatra"),
+                TranslationUtils.translate("Tithi", lang) to state.tithi,
+                TranslationUtils.translate("Nakshatra", lang) to state.nakshatra,
                 TranslationUtils.translate("Yoga", lang) to state.yoga,
                 TranslationUtils.translate("Karana", lang) to state.karana,
-                TranslationUtils.translate("Vara", lang) to TranslationUtils.translate(state.vara, lang, "vara")
+                TranslationUtils.translate("Vara", lang) to state.vara
+            ))
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PanchangaSection(TranslationUtils.translate("Calendar", lang), listOf(
+                TranslationUtils.translate("Samvatsara", lang) to state.samvatsara,
+                TranslationUtils.translate("Ayana", lang) to state.ayana,
+                TranslationUtils.translate("Rutu", lang) to state.rutu,
+                TranslationUtils.translate("Masa", lang) to state.masa,
+                TranslationUtils.translate("Paksha", lang) to state.paksha
             ))
             
             Spacer(modifier = Modifier.height(16.dp))
             
             PanchangaSection(TranslationUtils.translate("Hora", lang), listOf(
-                TranslationUtils.translate("Current Hora", lang) to TranslationUtils.translate(state.hora, lang, "planet"),
-                TranslationUtils.translate("Next Hora", lang) to TranslationUtils.translate(state.horaNext, lang, "planet"),
-                TranslationUtils.translate("Remaining", lang) to state.remaining
+                TranslationUtils.translate("Current Hora", lang) to state.hora,
+                TranslationUtils.translate("Next Hora", lang) to state.horaNext,
+                TranslationUtils.translate("Remaining", lang) to state.remaining,
+                TranslationUtils.translate("Ends", lang) to state.horaEnds
             ))
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -54,8 +65,8 @@ fun PanchangaScreen(navController: NavController, state: PanchangaState, lang: S
             PanchangaSection(TranslationUtils.translate("Solar & Celestial", lang), listOf(
                 TranslationUtils.translate("Sunrise", lang) to state.sunrise,
                 TranslationUtils.translate("Sunset", lang) to state.sunset,
-                TranslationUtils.translate("Moon Rasi", lang) to TranslationUtils.translate(state.moonRasi, lang, "rasi"),
-                TranslationUtils.translate("Sun Rasi", lang) to TranslationUtils.translate(state.sunRasi, lang, "rasi")
+                TranslationUtils.translate("Moon Rasi", lang) to state.moonRasi,
+                TranslationUtils.translate("Sun Rasi", lang) to state.sunRasi
             ))
             
             Spacer(modifier = Modifier.height(16.dp))

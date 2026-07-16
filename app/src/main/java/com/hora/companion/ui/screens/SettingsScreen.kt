@@ -78,7 +78,7 @@ fun SettingsScreen(navController: NavController, dataStoreManager: DataStoreMana
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                if (currentLang == "kn") "API ಕಾನ್ಫಿಗರೇಶನ್" else "API Configuration", 
+                if (currentLang == "kn") "API ಸಂರಚನೆ" else "API Configuration", 
                 style = MaterialTheme.typography.titleMedium
             )
             TextField(
@@ -109,7 +109,7 @@ fun SettingsScreen(navController: NavController, dataStoreManager: DataStoreMana
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.1.0", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.1.1", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

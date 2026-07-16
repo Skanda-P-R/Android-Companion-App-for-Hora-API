@@ -14,9 +14,10 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     private val cache = CacheManager(context)
     private val moshi = Moshi.Builder().build()
 
-    suspend fun fetchAllRaw(lat: Double, lon: Double): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun fetchAllRaw(lat: Double, lon: Double, lang: String): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val respBody = api.getAllRaw(lat, lon)
+            val apiLang = if (lang == "kn") "kan" else "en"
+            val respBody = api.getAllRaw(lat, lon, apiLang)
             val json = respBody.string()
             cache.saveJson("all.json", json)
             Result.success(json)
@@ -53,29 +54,22 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
             val moonObj = map["moon"] as? Map<*, *>
             val sunObj = map["sun"] as? Map<*, *>
 
-            val endsAtRaw = horaObj?.get("ends_at")?.toString()
-            val formattedEnds = try {
-                if (endsAtRaw != null) {
-                    val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                    val outputFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-                    val date = inputFormat.parse(endsAtRaw.take(19))
-                    if (date != null) outputFormat.format(date) else "--:--"
-                } else "--:--"
-            } catch (e: Exception) {
-                "--:--"
-            }
-
             return PanchangaState(
                 hora = horaObj?.get("planet")?.toString() ?: "--",
                 horaSymbol = horaObj?.get("symbol")?.toString() ?: "",
                 horaNext = horaObj?.get("next")?.toString() ?: "--",
-                horaEnds = formattedEnds,
+                horaEnds = horaObj?.get("ends")?.toString() ?: "--",
                 remaining = horaObj?.get("remaining")?.toString() ?: "--",
                 tithi = panObj?.get("tithi")?.toString() ?: "--",
                 nakshatra = panObj?.get("nakshatra")?.toString() ?: "--",
                 yoga = panObj?.get("yoga")?.toString() ?: "--",
                 karana = panObj?.get("karana")?.toString() ?: "--",
                 vara = panObj?.get("vara")?.toString() ?: "--",
+                samvatsara = panObj?.get("samvatsara")?.toString() ?: "--",
+                ayana = panObj?.get("ayana")?.toString() ?: "--",
+                rutu = panObj?.get("rutu")?.toString() ?: "--",
+                masa = panObj?.get("masa")?.toString() ?: "--",
+                paksha = panObj?.get("paksha")?.toString() ?: "--",
                 rahuKalam = map["rahu_kalam"]?.toString() ?: "--",
                 yamaganda = map["yamaganda"]?.toString() ?: "--",
                 abhijit = map["abhijit"]?.toString() ?: "--",

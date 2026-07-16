@@ -60,7 +60,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.labelLarge
                     )
                     Text(
-                        text = TranslationUtils.translate(state.hora, lang, "planet"), 
+                        text = state.horaSymbol + " " + state.hora, 
                         style = MaterialTheme.typography.displayMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -116,11 +116,11 @@ fun SummaryCard(state: PanchangaState, lang: String) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 InfoItem(
                     TranslationUtils.translate("Tithi", lang), 
-                    TranslationUtils.translate(state.tithi, lang, "tithi")
+                    state.tithi
                 )
                 InfoItem(
                     TranslationUtils.translate("Vara", lang), 
-                    TranslationUtils.translate(state.vara, lang, "vara")
+                    state.vara
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
