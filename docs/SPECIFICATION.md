@@ -1,44 +1,45 @@
-# Original Android Companion App Specification
+# Android Companion App Specification (v0.3.0)
 
 ## Objective
 
-Build a native Android application (Kotlin + Jetpack Compose) that consumes the existing Flask REST API. Do not move any astrology logic to Android.
-
-The visual baseline is the existing iPhone Scriptable widgets for Hora/Panchanga and Kundali. Match their layout, spacing, typography and information density as closely as possible.
+Build a native Android application (Kotlin + Jetpack Compose) that consumes the Hora Flask REST API. The app aims to provide a high-density, user-friendly mobile experience for accessing Vedic astrological data.
 
 ## Stack
 
 -   Kotlin
--   Jetpack Compose
--   Jetpack Glance (Widgets)
--   Retrofit + OkHttp
--   Coil
--   WorkManager
--   DataStore Preferences
--   Material 3
+-   Jetpack Compose (Material 3)
+-   Jetpack Glance (Home Screen Widgets)
+-   Retrofit + OkHttp (REST Networking)
+-   Coil (Image Loading)
+-   WorkManager (Background Updates)
+-   DataStore Preferences (Persistence)
 
-## Backend
+## Backend API Support
 
-Use only the existing endpoints: 
-- `GET /api/v1/all`
-- `GET /api/v1/kundali`
-- `GET /api/v1/kundali/chart`
-
-Base API URL is: `https://dannyboiii.pythonanywhere.com/`
+The app consumes the following endpoints:
+- `GET /api/v1/all`: Aggregate response for dashboard summary.
+- `GET /api/v1/panchanga`: Detailed limbs with transition times.
+- `GET /api/v1/hora`: Real-time and historical planetary hour data.
+- `GET /api/v1/muhurta`: Calculated intervals (Rahu, Gulika, etc.).
+- `GET /api/v1/kundali/chart`: Real-time Transit Kundali PNG.
+- `GET /api/v1/kundali/birth/chart`: Personalized Janma Kundali PNG.
+- `GET /api/v1/locations`: Saved location registry.
+- `POST /api/v1/locations`: Custom location addition.
+- `DELETE /api/v1/locations/{name}`: Custom location removal.
 
 ## Core Screens
 
-1.  **Home**: Current Hora, remaining time, and quick summary.
-2.  **Panchanga**: Detailed limbs (Mirroring the iPhone medium widget).
-3.  **Kundali**: Display backend PNG with pinch zoom and pan support.
-4.  **Settings**: Language, API URL, and Location settings.
+1.  **Home**: Modern grid navigation providing a Hora countdown and Panchanga summary.
+2.  **Panchanga Detail**: Full view of all limbs and calendar details with date navigation.
+3.  **Hora Detail**: Current hora info with precise date/time selector support.
+4.  **Solar & Celestial**: Human-readable solar events and Sun/Moon rasi positions.
+5.  **Muhurta**: Timings for auspicious and inauspicious intervals.
+6.  **Transit Kundali**: Real-time chart visualization with full date/time control.
+7.  **Birth Kundali**: Interactive form to generate natal charts (Name, DOB, TOB).
+8.  **Locations**: Searchable registry with A-Z scrolling and multi-select deletion.
+9.  **Settings**: Application configuration (Language, API URL, Session).
 
 ## Widgets
-- Medium Hora widget matching the iPhone design. 
-- Small Kundali widget displaying backend PNG.
-
-## Offline
-Cache the last JSON and PNG. Show last successful update.
-
-## Networking
-Use Retrofit. Respect backend Cache-Control headers.
+- **Hora & Panchanga (Medium)**: 3-column high-density view of the Vedic day.
+- **Transit Kundali (Small)**: Dynamic visualization of current planetary positions.
+- **Widget Picker**: Enhanced selection experience with descriptive labels and screenshots.

@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +26,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.work.*
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.hora.companion.api.AuthService
+import com.hora.companion.api.HoraApiService
+import com.hora.companion.data.AuthRepository
+import com.hora.companion.repository.HoraRepository
+import com.hora.companion.security.DeviceUuidProvider
+import com.hora.companion.ui.login.LoginViewModel
 import com.hora.companion.ui.screens.*
 import com.hora.companion.workers.HoraUpdateWorker
 import kotlinx.coroutines.launch
@@ -58,11 +65,58 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(activity: MainActivity) {
     val navController = rememberNavController()
-    val factory = ViewModelFactory(activity)
+    val dataStoreManager = remember { DataStoreManager(activity) }
+    val authRepository = remember { AuthRepository(activity) }
+    val uuidProvider = remember { DeviceUuidProvider(activity) }
+    
+    val apiBase by dataStoreManager.apiBaseFlow.collectAsState(initial = "https://ndaskka.pythonanywhere.com/")
+
+    val logging = remember { 
+        okhttp3.logging.HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+            } else {
+                okhttp3.logging.HttpLoggingInterceptor.Level.NONE
+            }
+        }
+    }
+    
+    val commonClient = remember {
+        okhttp3.OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
+
+    val authService = remember(apiBase) { AuthService.create(baseUrl = apiBase, client = commonClient) }
+    val apiService = remember(apiBase) { 
+        HoraApiService.create(
+            authRepository = authRepository,
+            onSessionExpired = {
+                activity.lifecycleScope.launch {
+                    authRepository.clearSessionToken()
+                    authRepository.notifySessionExpired()
+                }
+            },
+            baseUrl = apiBase
+        ) 
+    }
+    val horaRepository = remember(apiService) { HoraRepository(apiService, activity) }
+    
+    val factory = remember(horaRepository, authService) { 
+        ViewModelFactory(activity, authRepository, authService, horaRepository) 
+    }
+    
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
-    val dataStoreManager = DataStoreManager(activity)
+    val loginViewModel: LoginViewModel = viewModel(factory = factory)
+
     val locationState by dataStoreManager.locationFlow.collectAsState(initial = null)
+    val locationName by dataStoreManager.locationNameFlow.collectAsState(initial = null)
+    val locationMode by dataStoreManager.locationModeFlow.collectAsState(initial = "gps")
     val langState by dataStoreManager.langFlow.collectAsState(initial = "en")
+    val sessionToken by authRepository.sessionToken.collectAsState(initial = null)
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -74,44 +128,121 @@ fun AppNavigation(activity: MainActivity) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        val hasFine = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val hasCoarse = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        
-        if (!hasFine && !hasCoarse) {
-            launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-        } else {
-            activity.fetchLocation(dataStoreManager)
+    LaunchedEffect(locationMode) {
+        if (locationMode == "gps") {
+            val hasFine = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            val hasCoarse = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            
+            if (!hasFine && !hasCoarse) {
+                launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            } else {
+                activity.fetchLocation(dataStoreManager)
+            }
         }
     }
 
-    NavHost(navController = navController, startDestination = "home") {
+    LaunchedEffect(Unit) {
+        authRepository.sessionExpiredEvent.collect {
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    // Determine start destination
+    val startDest = if (sessionToken.isNullOrEmpty()) "login" else "home"
+
+    NavHost(navController = navController, startDestination = startDest) {
+        composable("login") {
+            LoginScreen(
+                viewModel = loginViewModel,
+                uuidProvider = uuidProvider,
+                onLoginSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
+        }
         composable("home") {
             HomeScreen(
                 navController = navController,
                 viewModel = homeViewModel,
                 location = locationState ?: (12.9716 to 77.5946),
+                locationName = locationName,
+                locationMode = locationMode,
                 lang = langState
             )
         }
-        composable("panchanga") {
-            PanchangaScreen(
+        composable("panchanga_detail") {
+            PanchangaDetailScreen(
                 navController = navController,
-                state = homeViewModel.state.collectAsState().value,
+                repo = horaRepository,
+                location = locationState,
+                locationName = if (locationMode == "manual") locationName else null,
                 lang = langState
             )
         }
-        composable("kundali") {
-            KundaliScreen(
+        composable("hora_detail") {
+            HoraDetailScreen(
                 navController = navController,
-                location = locationState ?: (12.9716 to 77.5946),
+                repo = horaRepository,
+                location = locationState,
+                locationName = if (locationMode == "manual") locationName else null,
+                lang = langState
+            )
+        }
+        composable("solar_celestial") {
+            SolarCelestialScreen(
+                navController = navController,
+                repo = horaRepository,
+                location = locationState,
+                locationName = if (locationMode == "manual") locationName else null,
+                lang = langState
+            )
+        }
+        composable("muhurta") {
+            MuhurtaScreen(
+                navController = navController,
+                repo = horaRepository,
+                location = locationState,
+                locationName = if (locationMode == "manual") locationName else null,
+                lang = langState
+            )
+        }
+        composable("transit_kundali") {
+            TransitKundaliScreen(
+                navController = navController,
+                location = locationState,
+                locationName = if (locationMode == "manual") locationName else null,
+                apiBase = apiBase,
+                sessionToken = sessionToken,
+                lang = langState
+            )
+        }
+        composable("birth_kundali") {
+            BirthKundaliScreen(
+                navController = navController,
+                location = locationState,
+                locationName = if (locationMode == "manual") locationName else null,
+                apiBase = apiBase,
+                sessionToken = sessionToken,
+                lang = langState
+            )
+        }
+        composable("locations") {
+            LocationsScreen(
+                navController = navController,
+                repo = horaRepository,
+                dataStoreManager = dataStoreManager,
                 lang = langState
             )
         }
         composable("settings") {
             SettingsScreen(
                 navController = navController,
-                dataStoreManager = dataStoreManager
+                dataStoreManager = dataStoreManager,
+                authRepository = authRepository
             )
         }
     }

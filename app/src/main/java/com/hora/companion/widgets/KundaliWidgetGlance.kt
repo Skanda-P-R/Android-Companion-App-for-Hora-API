@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.*
 import androidx.glance.appwidget.*
 import androidx.glance.layout.*
@@ -20,18 +21,27 @@ class KundaliWidget : GlanceAppWidget() {
         val dataStore = DataStoreManager(context)
         
         val lang = dataStore.langFlow.first()
-        val location = dataStore.locationFlow.first() ?: (12.9716 to 77.5946)
         
-        // Optionally fetch new image in background if needed, but for now use cache
         val bytes = cache.readBytes("kundali.png")
-        val bitmap = bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+        var error: String? = null
+        val bitmap = bytes?.let { 
+            try {
+                BitmapFactory.decodeByteArray(it, 0, it.size) 
+            } catch (e: Exception) {
+                error = "Decode failed: ${e.message}"
+                null
+            }
+        } ?: run {
+            error = "No cache"
+            null
+        }
 
         provideContent {
             GlanceTheme {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
-                        .background(GlanceTheme.colors.background)
+                        .background(GlanceTheme.colors.surface)
                         .padding(4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.CenterVertically
@@ -44,7 +54,21 @@ class KundaliWidget : GlanceAppWidget() {
                             contentScale = ContentScale.Fit
                         )
                     } else {
-                        Text("No Kundali")
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (lang == "kn") "ಕುಂಡಲಿ ಇಲ್ಲ" else "No Kundali",
+                                style = androidx.glance.text.TextStyle(color = GlanceTheme.colors.onSurface)
+                            )
+                            error?.let {
+                                Text(
+                                    text = it,
+                                    style = androidx.glance.text.TextStyle(
+                                        color = GlanceTheme.colors.onSurfaceVariant,
+                                        fontSize = 10.sp
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }

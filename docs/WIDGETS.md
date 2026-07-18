@@ -1,36 +1,46 @@
 # Hora Companion Widgets
 
-The app provides two high-density widgets for the Android Home Screen, built with Jetpack Glance. These widgets are designed to match the information density of the original iPhone Scriptable widgets.
+The app provides high-density widgets for the Android Home Screen, built with Jetpack Glance. These widgets provide critical astrological data at a glance, mirroring the depth of traditional Panchangas in a modern mobile format.
 
 ## Available Widgets
 
-### 1. Hora & Panchanga (Medium)
-A detailed 2-column widget that provides a comprehensive view of the current astrological state.
-- **Header**: Current Hora symbol/planet and the time remaining.
-- **Sub-header**: Exact end time of the current Hora and the planet for the next Hora.
-- **Body (Left)**: Tithi, Rahu Kalam, and Yamaganda.
-- **Body (Right)**: Nakshatra, Abhijit, and Sunrise/Sunset.
-- **Footer**: Zodiac signs (Rasi) for the Moon and Sun with icons.
+### 1. Hora & Panchanga (Medium/Large)
+A sophisticated 3-column widget designed for maximum information density.
+- **Header**: Current Hora symbol, planet name, and time remaining.
+- **Sub-header**: Exact end time of the current Hora and the planet for the next interval.
+- **Grid (3 Columns)**:
+    - **Column 1**: Ayana, Rutu, and Masa.
+    - **Column 2**: Tithi, Nakshatra, and Sunrise/Sunset.
+    - **Column 3**: Rahu Kalam, Yamaganda, and Abhijit Muhurta.
+- **Footer**: Zodiac signs (Rasi) for the Moon and Sun.
 
-### 2. Kundali Chart (Small)
-A compact widget displaying the generated Kundali PNG for the current location.
+### 2. Transit Kundali Chart (Small/Medium)
+A visual widget displaying the real-time Transit Kundali PNG for your selected location.
+
+## Widget Selection Experience
+The app features a customized **Widget Picker**:
+- **Descriptive Labels**: "Hora & Panchanga" and "Transit Kundali".
+- **Realistic Previews**: See actual screenshots of the widgets before adding them.
+- **Modern Design**: Previews feature curved corners to match the Android 12+ aesthetic.
 
 ## Configuration & Usage
 
-### Location
-Widgets automatically use the last location saved by the main application in `DataStore`. Ensure you have granted location permissions and opened the app at least once to populate this data.
+### Location Support
+Widgets automatically use the primary location saved in the app:
+- **GPS Mode**: Updates based on your current tracking.
+- **Manual Mode**: Uses the specific saved location you've selected from the registry.
 
 ### Language Support
-The widgets automatically reflect the language choice (English or Kannada) set in the **Settings** screen of the app.
+All widget content (labels and data) automatically reflects the language choice (English or Kannada) set in the app.
 
 ### Refresh Logic
-1.  **Automatic**: The app schedules a background task via `WorkManager` that attempts to refresh data every 15 minutes.
-2.  **Manual**: Clicking the **Refresh** button inside the app immediately triggers an update for all active home screen widgets.
-3.  **Offline**: If the device is offline, widgets will display the last successfully cached data.
+1.  **Automatic**: Updated via `WorkManager` approximately every 15 minutes.
+2.  **Manual**: Refreshing the app's dashboard forces an immediate widget update.
+3.  **Offline**: Displays the last cached data with specific error messages if updates fail.
 
 ## How to Add
 1. Long-press on your Android home screen.
 2. Select **Widgets**.
 3. Find **Hora Companion**.
-4. Drag either the **HoraWidget** or **KundaliWidget** to your screen.
-5. (Recommended) Resize the Hora widget to a 4x2 or larger grid for the best viewing experience.
+4. Drag either the **Hora** or **Kundali** widget to your screen.
+5. (Recommended) Resize the Hora widget to fill a 4-column width for the clearest alignment.

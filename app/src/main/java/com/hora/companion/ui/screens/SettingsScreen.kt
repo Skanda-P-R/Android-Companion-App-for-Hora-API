@@ -13,17 +13,22 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.hora.companion.DataStoreManager
+import com.hora.companion.data.AuthRepository
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(navController: NavController, dataStoreManager: DataStoreManager) {
+fun SettingsScreen(
+    navController: NavController, 
+    dataStoreManager: DataStoreManager,
+    authRepository: AuthRepository
+) {
     val scope = rememberCoroutineScope()
-    var apiUrl by remember { mutableStateOf("https://dannyboiii.pythonanywhere.com/") }
+    var apiUrl by remember { mutableStateOf("https://ndaskka.pythonanywhere.com/") }
     val currentLang by dataStoreManager.langFlow.collectAsState(initial = "en")
 
     LaunchedEffect(Unit) {
-        apiUrl = dataStoreManager.getApiBase() ?: "https://dannyboiii.pythonanywhere.com/"
+        apiUrl = dataStoreManager.getApiBase() ?: "https://ndaskka.pythonanywhere.com/"
     }
 
     Scaffold(
@@ -102,14 +107,30 @@ fun SettingsScreen(navController: NavController, dataStoreManager: DataStoreMana
                 if (currentLang == "kn") "ಸ್ಥಳ" else "Location", 
                 style = MaterialTheme.typography.titleMedium
             )
-            Text(
-                if (currentLang == "kn") "ಅಪ್ಲಿಕೇಶನ್ ಸ್ವಯಂಚಾಲಿತವಾಗಿ GPS ಸ್ಥಳವನ್ನು ಬಳಸುತ್ತದೆ." else "The app currently uses GPS location automatically.", 
-                 style = MaterialTheme.typography.bodySmall)
-            
+            Button(onClick = { navController.navigate("locations") }) {
+                Text(if (currentLang == "kn") "ಸ್ಥಳವನ್ನು ಬದಲಾಯಿಸಿ" else "Change Location")
+            }
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.1.1", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.3.0", style = MaterialTheme.typography.bodyMedium)
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        authRepository.clearSessionToken()
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (currentLang == "kn") "ಲಾಗ್ ಔಟ್" else "Logout")
+            }
         }
     }
 }

@@ -11,8 +11,8 @@ android {
         applicationId = "com.hora.companion"
         minSdk = 21
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 4
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -32,6 +32,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
@@ -57,7 +58,9 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.squareup.moshi:moshi:1.15.1")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
 
     // Coil
     implementation("io.coil-kt:coil-compose:2.4.0")
@@ -67,6 +70,9 @@ dependencies {
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Security
+    implementation("androidx.security:security-crypto:1.1.0")
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.1.0")

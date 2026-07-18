@@ -15,6 +15,8 @@ class DataStoreManager(private val context: Context) {
     companion object {
         val KEY_LAT = doublePreferencesKey("key_lat")
         val KEY_LON = doublePreferencesKey("key_lon")
+        val KEY_LOCATION_NAME = stringPreferencesKey("key_location_name")
+        val KEY_LOCATION_MODE = stringPreferencesKey("key_location_mode") // "gps" or "manual"
         val KEY_API_BASE = stringPreferencesKey("key_api_base")
         val KEY_LANG = stringPreferencesKey("key_lang")
     }
@@ -25,14 +27,34 @@ class DataStoreManager(private val context: Context) {
         if (lat != null && lon != null) lat to lon else null
     }
 
+    val locationNameFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LOCATION_NAME]
+    }
+
+    val locationModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LOCATION_MODE] ?: "gps"
+    }
+
     val langFlow: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_LANG] ?: "en"
     }
 
-    suspend fun saveLocation(lat: Double, lon: Double) {
+    val apiBaseFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_API_BASE] ?: "https://ndaskka.pythonanywhere.com/"
+    }
+
+    suspend fun saveLocation(lat: Double, lon: Double, name: String? = null, mode: String? = null) {
         context.dataStore.edit { prefs ->
             prefs[KEY_LAT] = lat
             prefs[KEY_LON] = lon
+            if (name != null) prefs[KEY_LOCATION_NAME] = name
+            if (mode != null) prefs[KEY_LOCATION_MODE] = mode
+        }
+    }
+
+    suspend fun saveLocationMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_LOCATION_MODE] = mode
         }
     }
 
