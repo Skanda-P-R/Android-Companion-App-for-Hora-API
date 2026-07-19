@@ -12,12 +12,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.hora.companion.utils.TranslationUtils
 import com.hora.companion.repository.HoraRepository
+import com.hora.companion.utils.NetworkUtils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.ZonedDateTime
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,6 +34,7 @@ fun HoraDetailScreen(
     lang: String = "en"
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedTime by remember { mutableStateOf(Calendar.getInstance()) }
     
@@ -39,19 +44,20 @@ fun HoraDetailScreen(
     val sdfTime = SimpleDateFormat("HH:mm", Locale.getDefault())
     val displayDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
-    fun fetchData() {
+    fun fetchData(force: Boolean = false) {
         scope.launch {
-            state = state.copy(isLoading = true)
-            val res = repo.fetchHoraRaw(
+            state = PanchangaState(isLoading = true)
+            val res = repo.fetchHora(
                 lat = location?.first,
                 lon = location?.second,
                 location = locationName,
                 date = sdfDate.format(selectedDate.time),
                 time = sdfTime.format(selectedTime.time),
-                lang = lang
+                lang = lang,
+                force = force
             )
             state = if (res.isSuccess) {
-                repo.parsePanchangaFromJson(res.getOrNull()!!)
+                repo.mergeToState(horaJson = res.getOrNull())
             } else {
                 state.copy(isLoading = false, error = res.exceptionOrNull()?.message)
             }
@@ -60,6 +66,38 @@ fun HoraDetailScreen(
 
     LaunchedEffect(selectedDate, selectedTime, location, locationName) {
         fetchData()
+    }
+
+    var remainingDisplay by remember { mutableStateOf(state.remaining) }
+
+    LaunchedEffect(state.horaEndsAt, state.remaining) {
+        while (true) {
+            val endsAtStr = state.horaEndsAt
+            val today = Calendar.getInstance()
+            val isCurrentTime = sdfDate.format(selectedDate.time) == sdfDate.format(today.time) && 
+                               Math.abs(selectedTime.timeInMillis - today.timeInMillis) < 600000 // within 10 mins
+
+            if (endsAtStr != null && isCurrentTime) {
+                try {
+                    val endsAt = ZonedDateTime.parse(endsAtStr).toInstant().toEpochMilli()
+                    val now = System.currentTimeMillis()
+                    if (now < endsAt) {
+                        val diffMinutes = (endsAt - now) / 60000
+                        remainingDisplay = if (diffMinutes > 0) "$diffMinutes min" else "< 1 min"
+                    } else {
+                        remainingDisplay = "0 min"
+                        if (NetworkUtils.isOnline(context)) {
+                            fetchData(force = false)
+                        }
+                    }
+                } catch (e: Exception) {
+                    remainingDisplay = state.remaining
+                }
+            } else {
+                remainingDisplay = state.remaining
+            }
+            delay(10000)
+        }
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -146,7 +184,15 @@ fun HoraDetailScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                             DetailItem(TranslationUtils.translate("Ends", lang), state.horaEnds)
-                            DetailItem(TranslationUtils.translate("Remaining", lang), state.remaining)
+                            DetailItem(TranslationUtils.translate("Remaining", lang), remainingDisplay)
+                        }
+                        if (remainingDisplay == "0 min" && !NetworkUtils.isOnline(context)) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = TranslationUtils.translate("Updated", lang) + ": " + state.lastUpdated,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                         }
                     }
                 }

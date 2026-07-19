@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.hora.companion.utils.TranslationUtils
@@ -39,8 +38,8 @@ fun PanchangaDetailScreen(
 
     fun fetchData() {
         scope.launch {
-            state = state.copy(isLoading = true)
-            val res = repo.fetchAllRaw(
+            state = PanchangaState(isLoading = true)
+            val res = repo.fetchPanchanga(
                 lat = location?.first,
                 lon = location?.second,
                 location = locationName,
@@ -48,7 +47,7 @@ fun PanchangaDetailScreen(
                 lang = lang
             )
             state = if (res.isSuccess) {
-                repo.parsePanchangaFromJson(res.getOrNull()!!)
+                repo.mergeToState(panchangaJson = res.getOrNull()!!)
             } else {
                 state.copy(isLoading = false, error = res.exceptionOrNull()?.message)
             }
@@ -126,7 +125,6 @@ fun PanchangaDetailScreen(
 }
 
 data class LimbData(val label: String, val value: String, val ends: String = "")
-
 
 @Composable
 fun PanchangaSection(title: String, items: List<LimbData>, lang: String) {

@@ -1,6 +1,8 @@
 package com.hora.companion.ui.screens
 
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
@@ -9,11 +11,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.hora.companion.DataStoreManager
 import com.hora.companion.data.AuthRepository
+import com.hora.companion.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,6 +32,8 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     var apiUrl by remember { mutableStateOf("https://ndaskka.pythonanywhere.com/") }
     val currentLang by dataStoreManager.langFlow.collectAsState(initial = "en")
+    val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "purple")
+    val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
 
     LaunchedEffect(Unit) {
         apiUrl = dataStoreManager.getApiBase() ?: "https://ndaskka.pythonanywhere.com/"
@@ -43,9 +51,12 @@ fun SettingsScreen(
             )
         }
     ) { padding ->
+        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
             Text(
@@ -55,26 +66,46 @@ fun SettingsScreen(
             val options = listOf("en" to "English", "kn" to "ಕನ್ನಡ")
             Column(Modifier.selectableGroup()) {
                 options.forEach { (code, label) ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .selectable(
-                                selected = (code == currentLang),
-                                onClick = { scope.launch { dataStoreManager.saveLang(code) } },
-                                role = Role.RadioButton
-                            )
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    LanguageOption(
+                        label = label,
+                        selected = (code == currentLang),
+                        onClick = { scope.launch { dataStoreManager.saveLang(code) } }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                if (currentLang == "kn") "ಥೀಮ್ ಮೋಡ್" else "Theme Mode",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                val modeOptions = listOf(
+                    "light" to if (currentLang == "kn") "ಲೈಟ್" else "Light",
+                    "dark" to if (currentLang == "kn") "ಡಾರ್ಕ್" else "Dark",
+                    "system" to if (currentLang == "kn") "ಸಿಸ್ಟಂ" else "System"
+                )
+                modeOptions.forEach { (mode, label) ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            scope.launch { dataStoreManager.saveThemeMode(mode) }
+                        }
                     ) {
-                        RadioButton(
-                            selected = (code == currentLang),
-                            onClick = null // null recommended for accessibility with selectable modifier
+                        ThemeModeCircle(
+                            mode = mode,
+                            isSelected = (mode == currentThemeMode)
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(start = 16.dp)
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -102,6 +133,37 @@ fun SettingsScreen(
             }
             
             Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                if (currentLang == "kn") "ಅಪ್ಲಿಕೇಶನ್ ಬಣ್ಣ" else "App Colour Palette",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                AppTheme.entries.forEach { theme ->
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(theme.mainColor)
+                            .border(
+                                width = if (currentTheme == theme.colorName) 3.dp else 1.dp,
+                                color = if (currentTheme == theme.colorName) Color.Red else Color.Gray,
+                                shape = CircleShape
+                            )
+                            .clickable {
+                                scope.launch {
+                                    dataStoreManager.saveTheme(theme.colorName)
+                                }
+                            }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
                 if (currentLang == "kn") "ಸ್ಥಳ" else "Location", 
@@ -110,12 +172,13 @@ fun SettingsScreen(
             Button(onClick = { navController.navigate("locations") }) {
                 Text(if (currentLang == "kn") "ಸ್ಥಳವನ್ನು ಬದಲಾಯಿಸಿ" else "Change Location")
             }
+
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.3.0", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.3.2", style = MaterialTheme.typography.bodyMedium)
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = {
@@ -132,5 +195,78 @@ fun SettingsScreen(
                 Text(if (currentLang == "kn") "ಲಾಗ್ ಔಟ್" else "Logout")
             }
         }
+    }
+}
+
+@Composable
+fun ThemeModeCircle(
+    mode: String,
+    isSelected: Boolean
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .border(
+                width = if (isSelected) 3.dp else 1.dp,
+                color = if (isSelected) Color.Red else Color.Gray,
+                shape = CircleShape
+            )
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            when (mode) {
+                "light" -> {
+                    drawCircle(color = Color.White)
+                    drawCircle(color = Color.LightGray, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
+                }
+                "dark" -> {
+                    drawCircle(color = Color.Black)
+                }
+                "system" -> {
+                    drawArc(
+                        color = Color.White,
+                        startAngle = 90f,
+                        sweepAngle = 180f,
+                        useCenter = true
+                    )
+                    drawArc(
+                        color = Color.Black,
+                        startAngle = 270f,
+                        sweepAngle = 180f,
+                        useCenter = true
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LanguageOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                role = Role.RadioButton
+            )
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = null
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 16.dp)
+        )
     }
 }

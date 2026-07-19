@@ -5,11 +5,15 @@ import android.util.Log
 import com.hora.companion.api.HoraApiService
 import com.hora.companion.CacheManager
 import com.hora.companion.ui.screens.PanchangaState
+import com.hora.companion.utils.NetworkUtils
+import com.hora.companion.models.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.text.SimpleDateFormat
+import java.time.ZonedDateTime
 import java.util.*
 
 class HoraRepository(private val api: HoraApiService, private val context: Context) {
@@ -17,6 +21,191 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
+
+    private fun isToday(dateStr: String?): Boolean {
+        if (dateStr == null) return true
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        return dateStr == today
+    }
+
+    private fun isNow(dateStr: String?, timeStr: String?): Boolean {
+        if (dateStr == null && timeStr == null) return true
+        val now = Calendar.getInstance()
+        val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val sdfTime = SimpleDateFormat("HH:mm", Locale.getDefault())
+        
+        val dateMatch = dateStr == null || dateStr == sdfDate.format(now.time)
+        val timeMatch = timeStr == null || timeStr == sdfTime.format(now.time)
+        
+        // Allow 5 mins grace for time match if specified
+        if (dateMatch && timeStr != null) {
+            try {
+                val parts = timeStr.split(":")
+                val h = parts[0].toInt()
+                val m = parts[1].toInt()
+                val target = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, h)
+                    set(Calendar.MINUTE, m)
+                }
+                return Math.abs(target.timeInMillis - now.timeInMillis) < 300000 // 5 mins
+            } catch (e: Exception) {}
+        }
+        
+        return dateMatch && timeMatch
+    }
+
+    suspend fun fetchPanchanga(
+        lat: Double? = null,
+        lon: Double? = null,
+        location: String? = null,
+        date: String? = null,
+        lang: String,
+        force: Boolean = false
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val cacheName = "panchanga.json"
+        val online = NetworkUtils.isOnline(context)
+        val today = isToday(date)
+
+        if (!force && today) {
+            val cached = cache.readJson(cacheName)
+            if (cached != null && !online) return@withContext Result.success(cached)
+        }
+
+        if (online) {
+            return@withContext try {
+                val apiLang = if (lang == "kn") "kan" else "en"
+                val json = api.getPanchanga(lat, lon, location, date, apiLang).string()
+                if (today) cache.saveJson(cacheName, json)
+                Result.success(json)
+            } catch (e: Exception) {
+                val cached = cache.readJson(cacheName)
+                if (today && cached != null) Result.success(cached) else Result.failure(e)
+            }
+        } else {
+            val cached = cache.readJson(cacheName)
+            return@withContext if (today && cached != null) Result.success(cached) 
+            else Result.failure(Exception("Offline and no cache"))
+        }
+    }
+
+    suspend fun fetchMuhurta(
+        lat: Double? = null,
+        lon: Double? = null,
+        location: String? = null,
+        date: String? = null,
+        lang: String,
+        force: Boolean = false
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val cacheName = "muhurta.json"
+        val online = NetworkUtils.isOnline(context)
+        val today = isToday(date)
+
+        if (!force && today) {
+            val cached = cache.readJson(cacheName)
+            if (cached != null && !online) return@withContext Result.success(cached)
+        }
+
+        if (online) {
+            return@withContext try {
+                val apiLang = if (lang == "kn") "kan" else "en"
+                val json = api.getMuhurta(lat, lon, location, date, apiLang).string()
+                if (today) cache.saveJson(cacheName, json)
+                Result.success(json)
+            } catch (e: Exception) {
+                val cached = cache.readJson(cacheName)
+                if (today && cached != null) Result.success(cached) else Result.failure(e)
+            }
+        } else {
+            val cached = cache.readJson(cacheName)
+            return@withContext if (today && cached != null) Result.success(cached) 
+            else Result.failure(Exception("Offline and no cache"))
+        }
+    }
+
+    suspend fun fetchDay(
+        lat: Double? = null,
+        lon: Double? = null,
+        location: String? = null,
+        date: String? = null,
+        lang: String,
+        force: Boolean = false
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val cacheName = "day.json"
+        val online = NetworkUtils.isOnline(context)
+        val today = isToday(date)
+
+        if (!force && today) {
+            val cached = cache.readJson(cacheName)
+            if (cached != null && !online) return@withContext Result.success(cached)
+        }
+
+        if (online) {
+            return@withContext try {
+                val apiLang = if (lang == "kn") "kan" else "en"
+                val json = api.getDay(lat, lon, location, date, apiLang).string()
+                if (today) cache.saveJson(cacheName, json)
+                Result.success(json)
+            } catch (e: Exception) {
+                val cached = cache.readJson(cacheName)
+                if (today && cached != null) Result.success(cached) else Result.failure(e)
+            }
+        } else {
+            val cached = cache.readJson(cacheName)
+            return@withContext if (today && cached != null) Result.success(cached) 
+            else Result.failure(Exception("Offline and no cache"))
+        }
+    }
+
+    suspend fun fetchHora(
+        lat: Double? = null,
+        lon: Double? = null,
+        location: String? = null,
+        date: String? = null,
+        time: String? = null,
+        lang: String,
+        force: Boolean = false
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val cacheName = "hora.json"
+        val online = NetworkUtils.isOnline(context)
+        val today = isNow(date, time)
+
+        if (!force && today) {
+            val cached = cache.readJson(cacheName)
+            if (cached != null) {
+                try {
+                    val obj = JSONObject(cached)
+                    val hora = obj.getJSONObject("hora")
+                    val endsAtStr = hora.getString("ends_at")
+                    // Simple manual parse for ISO timestamp to support API 21+ without desugaring
+                    val endsAt = try {
+                        ZonedDateTime.parse(endsAtStr).toInstant().toEpochMilli()
+                    } catch (e: Exception) {
+                        // Fallback if ZonedDateTime fails on old API
+                        System.currentTimeMillis() - 1 // Assume expired
+                    }
+                    if (System.currentTimeMillis() < endsAt) {
+                        return@withContext Result.success(cached)
+                    }
+                } catch (e: Exception) {}
+            }
+        }
+
+        if (online) {
+            return@withContext try {
+                val apiLang = if (lang == "kn") "kan" else "en"
+                val json = api.getHora(lat, lon, location, date, time, apiLang).string()
+                if (today) cache.saveJson(cacheName, json)
+                Result.success(json)
+            } catch (e: Exception) {
+                val cached = cache.readJson(cacheName)
+                if (today && cached != null) Result.success(cached) else Result.failure(e)
+            }
+        } else {
+            val cached = cache.readJson(cacheName)
+            return@withContext if (today && cached != null) Result.success(cached) 
+            else Result.failure(Exception("Offline and no cache or expired"))
+        }
+    }
 
     suspend fun fetchAllRaw(
         lat: Double? = null,
@@ -172,6 +361,107 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         }
     }
 
+    fun mergeToState(
+        panchangaJson: String? = null,
+        muhurtaJson: String? = null,
+        dayJson: String? = null,
+        horaJson: String? = null
+    ): PanchangaState {
+        var state = PanchangaState()
+        
+        panchangaJson?.let { json ->
+            try {
+                val adapter = moshi.adapter(PanchangaResponse::class.java)
+                val resp = adapter.fromJson(json)
+                resp?.let {
+                    state = state.copy(
+                        tithi = it.panchanga["tithi"] ?: "--",
+                        nakshatra = it.panchanga["nakshatra"] ?: "--",
+                        yoga = it.panchanga["yoga"] ?: "--",
+                        karana = it.panchanga["karana"] ?: "--",
+                        vara = it.panchanga["vara"] ?: "--",
+                        samvatsara = it.panchanga["samvatsara"] ?: "--",
+                        ayana = it.panchanga["ayana"] ?: "--",
+                        rutu = it.panchanga["rutu"] ?: "--",
+                        masa = it.panchanga["masa"] ?: "--",
+                        paksha = it.panchanga["paksha"] ?: "--",
+                        
+                        tithiEnds = getEnd(it.panchangaDetails["tithi"]),
+                        nakshatraEnds = getEnd(it.panchangaDetails["nakshatra"]),
+                        yogaEnds = getEnd(it.panchangaDetails["yoga"]),
+                        karanaEnds = getEnd(it.panchangaDetails["karana"]),
+                        
+                        moonRasi = it.moon["rasi"]?.toString() ?: "--",
+                        sunRasi = it.sun["rasi"]?.toString() ?: "--"
+                    )
+                }
+            } catch (e: Exception) { Log.e("HoraRepository", "Error merging panchanga", e) }
+        }
+
+        muhurtaJson?.let { json ->
+            try {
+                val adapter = moshi.adapter(MuhurtaResponse::class.java)
+                val resp = adapter.fromJson(json)
+                resp?.let {
+                    state = state.copy(
+                        rahuKalam = it.muhurta["rahu_kalam"]?.display ?: "--",
+                        gulika = it.muhurta["gulika"]?.display ?: "--",
+                        yamaganda = it.muhurta["yamaganda"]?.display ?: "--",
+                        abhijit = it.muhurta["abhijit"]?.display ?: "--"
+                    )
+                }
+            } catch (e: Exception) { Log.e("HoraRepository", "Error merging muhurta", e) }
+        }
+
+        dayJson?.let { json ->
+            try {
+                val adapter = moshi.adapter(DayResponse::class.java)
+                val resp = adapter.fromJson(json)
+                resp?.let {
+                    state = state.copy(
+                        sunrise = it.sunrise,
+                        sunset = it.sunset,
+                        sunriseAt = it.sunriseAt,
+                        sunsetAt = it.sunsetAt,
+                        nextSunriseAt = it.nextSunriseAt,
+                        solarNoonAt = it.solarNoonAt,
+                        daylightMidpointAt = it.daylightMidpointAt,
+                        dayDuration = it.dayDurationSeconds.toString(),
+                        nightDuration = it.nightDurationSeconds.toString(),
+                        lastUpdated = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date()),
+                        lastUpdatedMillis = System.currentTimeMillis()
+                    )
+                }
+            } catch (e: Exception) { Log.e("HoraRepository", "Error merging day", e) }
+        }
+
+        horaJson?.let { json ->
+            try {
+                val adapter = moshi.adapter(HoraResponse::class.java)
+                val resp = adapter.fromJson(json)
+                resp?.let {
+                    state = state.copy(
+                        hora = it.hora.planet,
+                        horaSymbol = it.hora.symbol,
+                        horaNext = it.hora.next,
+                        horaEnds = it.hora.ends,
+                        horaEndsAt = it.hora.endsAt,
+                        remaining = it.hora.remaining
+                    )
+                }
+            } catch (e: Exception) { Log.e("HoraRepository", "Error merging hora", e) }
+        }
+
+        return state
+    }
+
+    private fun getEnd(obj: Any?): String {
+        val detail = obj as? Map<*, *>
+        val endsAt = detail?.get("ends_at")?.toString() ?: ""
+        if (endsAt.isEmpty()) return ""
+        return endsAt.split("T").lastOrNull()?.take(5) ?: ""
+    }
+
     fun parsePanchangaFromJson(json: String): PanchangaState {
         try {
             val adapter = moshi.adapter(Map::class.java)
@@ -183,22 +473,12 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
             val moonObj = map["moon"] as? Map<*, *>
             val sunObj = map["sun"] as? Map<*, *>
             
-            val muhurtaMap = map["muhurta"] as? Map<*, *>
-
-            fun getEnd(obj: Any?): String {
-                val detail = obj as? Map<*, *>
-                val endsAt = detail?.get("ends_at")?.toString() ?: ""
-                if (endsAt.isEmpty()) return ""
-                // Extract just time for display if it's a long ISO string, or keep as is
-                // For simplicity, let's just use the raw string or format it
-                return endsAt.split("T").lastOrNull()?.take(5) ?: ""
-            }
-
             return PanchangaState(
                 hora = horaObj?.get("planet")?.toString() ?: "--",
                 horaSymbol = horaObj?.get("symbol")?.toString() ?: "",
                 horaNext = horaObj?.get("next")?.toString() ?: "--",
                 horaEnds = horaObj?.get("ends")?.toString() ?: "--",
+                horaEndsAt = horaObj?.get("ends_at")?.toString(),
                 remaining = horaObj?.get("remaining")?.toString() ?: "--",
                 
                 tithi = panSummary?.get("tithi")?.toString() ?: "--",
@@ -235,6 +515,7 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
                 moonRasi = moonObj?.get("rasi")?.toString() ?: "--",
                 sunRasi = sunObj?.get("rasi")?.toString() ?: "--",
                 lastUpdated = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date()),
+                lastUpdatedMillis = System.currentTimeMillis(),
                 isLoading = false
             )
         } catch (e: Exception) {

@@ -25,7 +25,6 @@ class HoraUpdateWorker(appContext: Context, params: WorkerParameters) : Coroutin
         val api = HoraApiService.create(
             authRepository = authRepository,
             onSessionExpired = {
-                // In background, we just notify repo, which might not be ideal for UI but good for state
                 authRepository.notifySessionExpired() 
             }
         )
@@ -33,25 +32,37 @@ class HoraUpdateWorker(appContext: Context, params: WorkerParameters) : Coroutin
         
         val location = dataStoreManager.locationFlow.first()
         val locationName = dataStoreManager.locationNameFlow.first()
-        val locationMode = dataStoreManager.locationModeFlow.first()
         val lang = dataStoreManager.langFlow.first()
         
-        val res = if (locationMode == "gps" && location != null) {
-            val panchangaDeferred = async { repo.fetchAllRaw(lat = location.first, lon = location.second, lang = lang) }
-            val kundaliDeferred = async { repo.fetchKundaliImage(lat = location.first, lon = location.second, lang = lang) }
-            kundaliDeferred.await()
-            panchangaDeferred.await()
-        } else {
-            val panchangaDeferred = async { repo.fetchAllRaw(location = locationName, lang = lang) }
-            val kundaliDeferred = async { repo.fetchKundaliImage(location = locationName, lang = lang) }
-            kundaliDeferred.await()
-            panchangaDeferred.await()
-        }
+        try {
+            val lat = location?.first
+            val lon = location?.second
 
-        if (res.isSuccess) {
-            WidgetUtils.updateAllWidgets(applicationContext)
-            return@coroutineScope Result.success()
+            // Update Hora (frequent)
+            val horaDeferred = async { repo.fetchHora(lat, lon, locationName, lang = lang) }
+            
+            // Update Daily parts (repo handles once-per-day caching internally)
+            val panDeferred = async { repo.fetchPanchanga(lat, lon, locationName, lang = lang) }
+            val muhDeferred = async { repo.fetchMuhurta(lat, lon, locationName, lang = lang) }
+            val dayDeferred = async { repo.fetchDay(lat, lon, locationName, lang = lang) }
+            
+            // Kundali (required for widget)
+            val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang) }
+
+            val hRes = horaDeferred.await()
+            panDeferred.await()
+            muhDeferred.await()
+            dayDeferred.await()
+            kundaliDeferred.await()
+
+            if (hRes.isSuccess) {
+                WidgetUtils.updateAllWidgets(applicationContext)
+                Result.success()
+            } else {
+                Result.retry()
+            }
+        } catch (e: Exception) {
+            Result.retry()
         }
-        Result.retry()
     }
 }

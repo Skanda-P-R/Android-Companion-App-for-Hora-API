@@ -34,6 +34,7 @@ import com.hora.companion.security.DeviceUuidProvider
 import com.hora.companion.ui.login.LoginViewModel
 import com.hora.companion.ui.screens.*
 import com.hora.companion.workers.HoraUpdateWorker
+import com.hora.companion.ui.theme.HoraTheme
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -41,8 +42,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         scheduleBackgroundUpdates()
+        val dataStoreManager = DataStoreManager(this)
         setContent {
-            MaterialTheme {
+            val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "purple")
+            val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
+            HoraTheme(themeName = currentTheme, themeMode = currentThemeMode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     AppNavigation(this)
                 }

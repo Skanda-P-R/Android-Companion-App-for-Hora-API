@@ -5,6 +5,7 @@ data class PanchangaState(
     val horaSymbol: String = "",
     val horaNext: String = "--",
     val horaEnds: String = "--",
+    val horaEndsAt: String? = null,
     val remaining: String = "--",
     val tithi: String = "--",
     val tithiEnds: String = "",
@@ -42,6 +43,7 @@ data class PanchangaState(
     val moonRasi: String = "--",
     val sunRasi: String = "--",
     val lastUpdated: String = "--",
+    val lastUpdatedMillis: Long = 0,
     val isLoading: Boolean = false,
     val error: String? = null
 )

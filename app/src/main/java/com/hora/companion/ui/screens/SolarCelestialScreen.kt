@@ -34,19 +34,31 @@ fun SolarCelestialScreen(
 
     fun fetchData() {
         scope.launch {
-            state = state.copy(isLoading = true)
-            val res = repo.fetchAllRaw(
+            state = PanchangaState(isLoading = true)
+            
+            // We need both 'day' for solar events and 'panchanga' for celestial (rasi)
+            val dayRes = repo.fetchDay(
                 lat = location?.first,
                 lon = location?.second,
                 location = locationName,
                 date = sdf.format(selectedDate.time),
                 lang = lang
             )
-            state = if (res.isSuccess) {
-                repo.parsePanchangaFromJson(res.getOrNull()!!)
-            } else {
-                state.copy(isLoading = false, error = res.exceptionOrNull()?.message)
-            }
+            val panRes = repo.fetchPanchanga(
+                lat = location?.first,
+                lon = location?.second,
+                location = locationName,
+                date = sdf.format(selectedDate.time),
+                lang = lang
+            )
+            
+            state = repo.mergeToState(
+                dayJson = dayRes.getOrNull(),
+                panchangaJson = panRes.getOrNull()
+            ).copy(
+                isLoading = false,
+                error = if (dayRes.isFailure) dayRes.exceptionOrNull()?.message else null
+            )
         }
     }
 

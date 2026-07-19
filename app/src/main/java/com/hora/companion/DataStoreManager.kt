@@ -19,6 +19,8 @@ class DataStoreManager(private val context: Context) {
         val KEY_LOCATION_MODE = stringPreferencesKey("key_location_mode") // "gps" or "manual"
         val KEY_API_BASE = stringPreferencesKey("key_api_base")
         val KEY_LANG = stringPreferencesKey("key_lang")
+        val KEY_THEME = stringPreferencesKey("key_theme")
+        val KEY_THEME_MODE = stringPreferencesKey("key_theme_mode")
     }
 
     val locationFlow: Flow<Pair<Double, Double>?> = context.dataStore.data.map { prefs ->
@@ -41,6 +43,14 @@ class DataStoreManager(private val context: Context) {
 
     val apiBaseFlow: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_API_BASE] ?: "https://ndaskka.pythonanywhere.com/"
+    }
+
+    val themeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_THEME] ?: "purple"
+    }
+
+    val themeModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_THEME_MODE] ?: "light"
     }
 
     suspend fun saveLocation(lat: Double, lon: Double, name: String? = null, mode: String? = null) {
@@ -77,6 +87,18 @@ class DataStoreManager(private val context: Context) {
     suspend fun saveLang(lang: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_LANG] = lang
+        }
+    }
+
+    suspend fun saveTheme(theme: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_THEME] = theme
+        }
+    }
+
+    suspend fun saveThemeMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_THEME_MODE] = mode
         }
     }
 }

@@ -34,8 +34,8 @@ fun MuhurtaScreen(
 
     fun fetchData() {
         scope.launch {
-            state = state.copy(isLoading = true)
-            val res = repo.fetchAllRaw(
+            state = PanchangaState(isLoading = true)
+            val res = repo.fetchMuhurta(
                 lat = location?.first,
                 lon = location?.second,
                 location = locationName,
@@ -43,7 +43,7 @@ fun MuhurtaScreen(
                 lang = lang
             )
             state = if (res.isSuccess) {
-                repo.parsePanchangaFromJson(res.getOrNull()!!)
+                repo.mergeToState(muhurtaJson = res.getOrNull()!!)
             } else {
                 state.copy(isLoading = false, error = res.exceptionOrNull()?.message)
             }

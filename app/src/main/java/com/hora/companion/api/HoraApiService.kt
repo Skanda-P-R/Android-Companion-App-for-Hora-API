@@ -56,6 +56,15 @@ interface HoraApiService {
         @Query("lang") lang: String = "en"
     ): ResponseBody
 
+    @GET("api/v1/day")
+    suspend fun getDay(
+        @Query("lat") lat: Double? = null,
+        @Query("lon") lon: Double? = null,
+        @Query("location") location: String? = null,
+        @Query("date") date: String? = null,
+        @Query("lang") lang: String = "en"
+    ): ResponseBody
+
     @GET("api/v1/kundali")
     suspend fun getKundali(
         @Query("lat") lat: Double? = null,
