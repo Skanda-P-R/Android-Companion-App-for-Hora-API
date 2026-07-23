@@ -75,7 +75,7 @@ interface HoraApiService {
         @Query("lang") lang: String = "en"
     ): Map<String, @JvmSuppressWildcards Any>
 
-    @GET("api/v1/kundali/chart")
+    @GET("api/v1/kundali/svg")
     suspend fun getKundaliChartRaw(
         @Query("lat") lat: Double? = null,
         @Query("lon") lon: Double? = null,
@@ -85,7 +85,7 @@ interface HoraApiService {
         @Query("lang") lang: String = "en"
     ): ResponseBody
 
-    @GET("api/v1/kundali/birth/chart")
+    @GET("api/v1/kundali/birth/svg")
     suspend fun getBirthChartRaw(
         @Query("lat") lat: Double? = null,
         @Query("lon") lon: Double? = null,
@@ -95,6 +95,17 @@ interface HoraApiService {
         @Query("name") name: String? = null,
         @Query("lang") lang: String = "en"
     ): ResponseBody
+
+    @GET("api/v1/dasha")
+    suspend fun getDasha(
+        @Query("lat") lat: Double? = null,
+        @Query("lon") lon: Double? = null,
+        @Query("location") location: String? = null,
+        @Query("date") date: String? = null,
+        @Query("time") time: String? = null,
+        @Query("lang") lang: String = "en",
+        @Query("depth") depth: Int? = null
+    ): com.hora.companion.models.DashaResponse
 
     @GET("api/v1/locations")
     suspend fun getLocations(): Map<String, @JvmSuppressWildcards Map<String, @JvmSuppressWildcards Any>>

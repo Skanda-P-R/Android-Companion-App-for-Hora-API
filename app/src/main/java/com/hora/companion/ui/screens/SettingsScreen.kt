@@ -34,6 +34,7 @@ fun SettingsScreen(
     val currentLang by dataStoreManager.langFlow.collectAsState(initial = "en")
     val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "purple")
     val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
+    val currentDashaLevel by dataStoreManager.dashaLevelFlow.collectAsState(initial = 3)
 
     LaunchedEffect(Unit) {
         apiUrl = dataStoreManager.getApiBase() ?: "https://ndaskka.pythonanywhere.com/"
@@ -164,6 +165,30 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                if (currentLang == "kn") "ದಶಾ ಮಟ್ಟಗಳು" else "Dasha Levels",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Row(Modifier.selectableGroup()) {
+                listOf(1, 2, 3).forEach { level ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .selectable(
+                                selected = (currentDashaLevel == level),
+                                onClick = { scope.launch { dataStoreManager.saveDashaLevel(level) } },
+                                role = Role.RadioButton
+                            )
+                            .padding(8.dp)
+                    ) {
+                        RadioButton(selected = (currentDashaLevel == level), onClick = null)
+                        Text(text = level.toString(), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
                 if (currentLang == "kn") "ಸ್ಥಳ" else "Location", 
@@ -176,7 +201,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.3.2", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.4.0", style = MaterialTheme.typography.bodyMedium)
 
             Spacer(modifier = Modifier.height(32.dp))
 

@@ -332,6 +332,25 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         }
     }
 
+    suspend fun fetchDasha(
+        lat: Double? = null,
+        lon: Double? = null,
+        location: String? = null,
+        date: String? = null,
+        time: String? = null,
+        lang: String,
+        depth: Int? = null
+    ): Result<DashaResponse> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val apiLang = if (lang == "kn") "kan" else "en"
+            val resp = api.getDasha(lat, lon, location, date, time, apiLang, depth)
+            Result.success(resp)
+        } catch (e: Exception) {
+            Log.e("HoraRepository", "Error fetching dasha", e)
+            Result.failure(e)
+        }
+    }
+
     suspend fun fetchLocations(): Result<Map<String, Map<String, Any>>> = withContext(Dispatchers.IO) {
         return@withContext try {
             Result.success(api.getLocations())

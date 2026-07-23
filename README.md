@@ -1,4 +1,4 @@
-# Hora Companion Android (Beta v0.3.0)
+# Hora Companion Android (Beta v0.4.0)
 
 A native Android application providing real-time astrological (Panchanga) and Hora data by consuming a dedicated Flask REST API. Designed with high-density Home Screen widgets and full Kannada language support.
 
@@ -9,7 +9,8 @@ A native Android application providing real-time astrological (Panchanga) and Ho
 - **Full Panchanga Detail**: Comprehensive view of Samvatsara, Ayana, Rutu, Masa, Paksha, Tithi, Nakshatra, Yoga, Karana, and Vara with exact end times.
 - **Solar & Celestial Insights**: Human-readable data for Sunrise, Sunset, Solar Noon, durations, and Sun/Moon Rasi positions.
 - **Muhurta Timings**: Dedicated view for Rahu Kalam, Gulika, Yamaganda, and Abhijit Muhurta for any selected date.
-- **Birth & Transit Kundali**: View real-time transit charts or generate Janma Kundali (Birth Charts) with custom name, date, and time inputs.
+- **Birth & Transit Kundali (SVG)**: View real-time transit charts or generate Janma Kundali (Birth Charts) with perfectly sharp SVG vector rendering.
+- **Vimshottari Dasha Explorer**: Integrated multi-tab interface in Kundali screens to view Moon details, Dasha balance, and a hierarchical 3-level Dasha timeline (Mahadasha, Antardasha, Pratyantardasha).
 - **Advanced Location Registry**: Switch between automatic GPS tracking and a searchable manual location database with A-Z indexing and custom entry support.
 - **High-Density Widgets**: Android Home Screen widgets built with Jetpack Glance, featuring a realistic selection picker and curved modern previews.
 - **Multilingual Support**: Full English and Kannada support for all UI labels and backend-driven data values.

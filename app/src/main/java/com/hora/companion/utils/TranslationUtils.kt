@@ -26,7 +26,6 @@ object TranslationUtils {
         "Yamaganda" to "ಯಮಗಂಡ",
         "Gulika" to "ಗುಳಿಕಕಾಲ",
         "Ends" to "ಅಂತ್ಯ",
-        "Remaining" to "ಉಳಿದ ಸಮಯ",
         "Timeline" to "ಸಮಯದ ಹಾದಿ",
         "Next" to "ಮುಂದಿನ ಹೋರೆ",
         "Next Hora" to "ಮುಂದಿನ ಹೋರೆ",
@@ -69,22 +68,29 @@ object TranslationUtils {
         "Are you sure you want to delete these locations from the backend?" to "ನೀವು ಈ ಸ್ಥಳಗಳನ್ನು ಸರ್ವರ್‌ನಿಂದ ಅಳಿಸಲು ಬಯಸುವಿರಾ?",
         "Yes, Delete" to "ಹೌದು, ಅಳಿಸಿ",
         "Cancel" to "ರದ್ದುಮಾಡಿ",
-        "Ayana" to "ಅಯನ",
-        "Rutu" to "ಋತು",
-        "Masa" to "ಮಾಸ",
-        "Paksha" to "ಪಕ್ಷ",
-        "Samvatsara" to "ಸಂವತ್ಸರ",
-        "Yoga" to "ಯೋಗ",
-        "Karana" to "ಕರಣ",
-        "Vara" to "ವಾರ",
-        "Nakshatra" to "ನಕ್ಷತ್ರ",
-        "Tithi" to "ತಿಥಿ"
+        "Info" to "ಮಾಹಿತಿ",
+        "Kundali" to "ಕುಂಡಲಿ",
+        "Dasha" to "ದಶಾ",
+        "Moon Information" to "ಚಂದ್ರನ ಮಾಹಿತಿ",
+        "Balance of Dasha" to "ದಶೆ ಶೇಷ",
+        "Active Dasha" to "ಪ್ರಸ್ತುತ ದಶೆ",
+        "Lord" to "ಅಧಿಪತಿ",
+        "Mahadasha" to "ಮಹಾದಶೆ",
+        "Antardasha" to "ಅಂತರದಶೆ",
+        "Pratyantardasha" to "ಪ್ರತ್ಯಂತರದಶೆ",
+        "Rashi" to "ರಾಶಿ",
+        "Rashi:" to "ರಾಶಿ:",
+        "Nakshatra:" to "ನಕ್ಷತ್ರ:",
+        "Lord:" to "ಅಧಿಪತಿ:",
+        "Remaining:" to "ಉಳಿದ ಸಮಯ:",
+        "Entered Details" to "ನಮೂದಿಸಿದ ವಿವರಗಳು",
+        "Name:" to "ಹೆಸರು:",
+        "Date:" to "ದಿನಾಂಕ:",
+        "Time:" to "ಸಮಯ:"
     )
 
     fun translate(value: String, lang: String, category: String = "ui"): String {
         if (lang != "kn") return value
-        // Data translations are now handled by the backend. 
-        // We only translate UI labels here.
         return if (category == "ui") {
             UI[value] ?: value
         } else {

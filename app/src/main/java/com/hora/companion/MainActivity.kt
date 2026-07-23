@@ -115,6 +115,8 @@ fun AppNavigation(activity: MainActivity) {
     
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
     val loginViewModel: LoginViewModel = viewModel(factory = factory)
+    val transitViewModel: TransitViewModel = viewModel(factory = factory)
+    val birthViewModel: BirthViewModel = viewModel(factory = factory)
 
     val locationState by dataStoreManager.locationFlow.collectAsState(initial = null)
     val locationName by dataStoreManager.locationNameFlow.collectAsState(initial = null)
@@ -215,23 +217,29 @@ fun AppNavigation(activity: MainActivity) {
             )
         }
         composable("transit_kundali") {
+            val dashaLevel by dataStoreManager.dashaLevelFlow.collectAsState(initial = 3)
             TransitKundaliScreen(
                 navController = navController,
+                viewModel = transitViewModel,
                 location = locationState,
                 locationName = if (locationMode == "manual") locationName else null,
                 apiBase = apiBase,
                 sessionToken = sessionToken,
-                lang = langState
+                lang = langState,
+                dashaLevel = dashaLevel
             )
         }
         composable("birth_kundali") {
+            val dashaLevel by dataStoreManager.dashaLevelFlow.collectAsState(initial = 3)
             BirthKundaliScreen(
                 navController = navController,
+                viewModel = birthViewModel,
                 location = locationState,
                 locationName = if (locationMode == "manual") locationName else null,
                 apiBase = apiBase,
                 sessionToken = sessionToken,
-                lang = langState
+                lang = langState,
+                dashaLevel = dashaLevel
             )
         }
         composable("locations") {

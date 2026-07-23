@@ -1,4 +1,4 @@
-# Android Companion App Specification (v0.3.0)
+# Android Companion App Specification (v0.4.0)
 
 ## Objective
 
@@ -10,7 +10,7 @@ Build a native Android application (Kotlin + Jetpack Compose) that consumes the 
 -   Jetpack Compose (Material 3)
 -   Jetpack Glance (Home Screen Widgets)
 -   Retrofit + OkHttp (REST Networking)
--   Coil (Image Loading)
+-   Coil (SVG Image Loading)
 -   WorkManager (Background Updates)
 -   DataStore Preferences (Persistence)
 
@@ -21,8 +21,9 @@ The app consumes the following endpoints:
 - `GET /api/v1/panchanga`: Detailed limbs with transition times.
 - `GET /api/v1/hora`: Real-time and historical planetary hour data.
 - `GET /api/v1/muhurta`: Calculated intervals (Rahu, Gulika, etc.).
-- `GET /api/v1/kundali/chart`: Real-time Transit Kundali PNG.
-- `GET /api/v1/kundali/birth/chart`: Personalized Janma Kundali PNG.
+- `GET /api/v1/dasha`: Vimshottari Dasha timeline and Balance.
+- `GET /api/v1/kundali/svg`: Real-time Transit Kundali Vector.
+- `GET /api/v1/kundali/birth/svg`: Personalized Janma Kundali Vector.
 - `GET /api/v1/locations`: Saved location registry.
 - `POST /api/v1/locations`: Custom location addition.
 - `DELETE /api/v1/locations/{name}`: Custom location removal.
@@ -34,10 +35,10 @@ The app consumes the following endpoints:
 3.  **Hora Detail**: Current hora info with precise date/time selector support.
 4.  **Solar & Celestial**: Human-readable solar events and Sun/Moon rasi positions.
 5.  **Muhurta**: Timings for auspicious and inauspicious intervals.
-6.  **Transit Kundali**: Real-time chart visualization with full date/time control.
-7.  **Birth Kundali**: Interactive form to generate natal charts (Name, DOB, TOB).
+6.  **Transit Kundali**: Multi-tab interface (Info, Kundali, Dasha) with SVG visualization and timeline explorer.
+7.  **Birth Kundali**: Natal chart generation with integrated Dasha details and SVG rendering.
 8.  **Locations**: Searchable registry with A-Z scrolling and multi-select deletion.
-9.  **Settings**: Application configuration (Language, API URL, Session).
+9.  **Settings**: Application configuration (Language, API URL, Dasha depth, Session).
 
 ## Widgets
 - **Hora & Panchanga (Medium)**: 3-column high-density view of the Vedic day.

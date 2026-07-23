@@ -21,6 +21,7 @@ class DataStoreManager(private val context: Context) {
         val KEY_LANG = stringPreferencesKey("key_lang")
         val KEY_THEME = stringPreferencesKey("key_theme")
         val KEY_THEME_MODE = stringPreferencesKey("key_theme_mode")
+        val KEY_DASHA_LEVEL = androidx.datastore.preferences.core.intPreferencesKey("key_dasha_level")
     }
 
     val locationFlow: Flow<Pair<Double, Double>?> = context.dataStore.data.map { prefs ->
@@ -51,6 +52,10 @@ class DataStoreManager(private val context: Context) {
 
     val themeModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_THEME_MODE] ?: "light"
+    }
+
+    val dashaLevelFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DASHA_LEVEL] ?: 3
     }
 
     suspend fun saveLocation(lat: Double, lon: Double, name: String? = null, mode: String? = null) {
@@ -99,6 +104,12 @@ class DataStoreManager(private val context: Context) {
     suspend fun saveThemeMode(mode: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_THEME_MODE] = mode
+        }
+    }
+
+    suspend fun saveDashaLevel(level: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DASHA_LEVEL] = level
         }
     }
 }

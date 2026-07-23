@@ -24,6 +24,14 @@ class ViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return LoginViewModel(authService, authRepository) as T
         }
+        if (modelClass.isAssignableFrom(TransitViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return TransitViewModel(horaRepository, context.applicationContext) as T
+        }
+        if (modelClass.isAssignableFrom(BirthViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return BirthViewModel(horaRepository, context.applicationContext) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

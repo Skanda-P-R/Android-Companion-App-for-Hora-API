@@ -93,3 +93,49 @@ data class MuhurtaInterval(
     val display: String,
     @Json(name = "duration_seconds") val durationSeconds: Double
 )
+
+data class DashaResponse(
+    val date: String,
+    val datetime: String,
+    val timezone: String,
+    val ayanamsa: String,
+    @Json(name = "year_type") val yearType: String,
+    val moon: MoonInfo,
+    @Json(name = "dasha_balance") val dashaBalance: DashaBalance,
+    @Json(name = "active_dasha") val activeDasha: ActiveDasha,
+    val timeline: List<DashaPeriod>
+)
+
+data class MoonInfo(
+    val longitude: Double,
+    @Json(name = "degree_in_rasi") val degreeInRasi: Double,
+    val rasi: String,
+    @Json(name = "rasi_number") val rasiNumber: Int,
+    val nakshatra: String,
+    @Json(name = "nakshatra_number") val nakshatraNumber: Int,
+    @Json(name = "nakshatra_lord") val nakshatraLord: String
+)
+
+data class DashaBalance(
+    val lord: String,
+    @Json(name = "total_years") val totalYears: Double,
+    @Json(name = "elapsed_years") val elapsedYears: Double,
+    @Json(name = "remaining_years") val remainingYears: Double,
+    @Json(name = "elapsed_fraction") val elapsedFraction: Double,
+    @Json(name = "remaining_fraction") val remainingFraction: Double
+)
+
+data class ActiveDasha(
+    val mahadasha: String,
+    val antardasha: String? = null,
+    val pratyantardasha: String? = null
+)
+
+data class DashaPeriod(
+    val level: Int,
+    val lord: String,
+    val start: String,
+    val end: String,
+    @Json(name = "duration_years") val durationYears: Double,
+    @Json(name = "sub_periods") val subPeriods: List<DashaPeriod> = emptyList()
+)
