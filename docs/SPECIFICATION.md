@@ -1,4 +1,4 @@
-# Android Companion App Specification (v0.4.0)
+# Android Companion App Specification (v0.5.0)
 
 ## Objective
 
@@ -36,9 +36,9 @@ The app consumes the following endpoints:
 4.  **Solar & Celestial**: Human-readable solar events and Sun/Moon rasi positions.
 5.  **Muhurta**: Timings for auspicious and inauspicious intervals.
 6.  **Transit Kundali**: Multi-tab interface (Info, Kundali, Dasha) with SVG visualization and timeline explorer.
-7.  **Birth Kundali**: Natal chart generation with integrated Dasha details and SVG rendering.
+7.  **Birth Kundali**: Natal chart generation with integrated Dasha details, SVG rendering, and a secure local save/load system with searchable birth place support.
 8.  **Locations**: Searchable registry with A-Z scrolling and multi-select deletion.
-9.  **Settings**: Application configuration (Language, API URL, Dasha depth, Session).
+9.  **Settings**: Application configuration (Language, API URL, Dasha depth, Session, and Kundali Save Path).
 
 ## Widgets
 - **Hora & Panchanga (Medium)**: 3-column high-density view of the Vedic day.

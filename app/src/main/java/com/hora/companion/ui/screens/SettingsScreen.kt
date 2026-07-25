@@ -1,5 +1,9 @@
 package com.hora.companion.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -7,12 +11,14 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,6 +27,7 @@ import com.hora.companion.DataStoreManager
 import com.hora.companion.data.AuthRepository
 import com.hora.companion.ui.theme.AppTheme
 import kotlinx.coroutines.launch
+import androidx.documentfile.provider.DocumentFile
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +42,33 @@ fun SettingsScreen(
     val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "purple")
     val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
     val currentDashaLevel by dataStoreManager.dashaLevelFlow.collectAsState(initial = 3)
+    val currentSavePath by dataStoreManager.savePathFlow.collectAsState(initial = null)
+    val context = LocalContext.current
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri?.let {
+            // Take persistable permission
+            val contentResolver = context.contentResolver
+            val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            contentResolver.takePersistableUriPermission(it, takeFlags)
+            
+            scope.launch {
+                dataStoreManager.saveSavePath(it.toString())
+            }
+        }
+    }
+
+    val displayPath = remember(currentSavePath) {
+        if (currentSavePath.isNullOrEmpty()) {
+            if (currentLang == "kn") "ಡೀಫಾಲ್ಟ್: Documents/Kundalis" else "Default: Documents/Kundalis"
+        } else {
+            val uri = Uri.parse(currentSavePath)
+            DocumentFile.fromTreeUri(context, uri)?.name ?: currentSavePath
+        }
+    }
 
     LaunchedEffect(Unit) {
         apiUrl = dataStoreManager.getApiBase() ?: "https://ndaskka.pythonanywhere.com/"
@@ -199,9 +233,30 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                if (currentLang == "kn") "ಕುಂಡಲಿ ಉಳಿಸುವ ಸ್ಥಳ" else "Kundali Save Location",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = displayPath ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { folderPickerLauncher.launch(null) },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+            ) {
+                Icon(Icons.Default.Folder, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (currentLang == "kn") "ಫೋಲ್ಡರ್ ಆಯ್ಕೆಮಾಡಿ" else "Select Save Folder")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.4.0", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.5.0", style = MaterialTheme.typography.bodyMedium)
 
             Spacer(modifier = Modifier.height(32.dp))
 

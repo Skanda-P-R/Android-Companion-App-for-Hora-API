@@ -1,5 +1,7 @@
 package com.hora.companion.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +25,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.hora.companion.models.DashaPeriod
 import com.hora.companion.utils.TranslationUtils
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,18 +39,25 @@ fun BirthKundaliScreen(
     apiBase: String,
     sessionToken: String?,
     lang: String = "en",
-    dashaLevel: Int = 3
+    dashaLevel: Int = 3,
+    savePath: String? = null
 ) {
+    val state by viewModel.state.collectAsState()
+    
     var nameInput by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<Calendar?>(null) }
     var selectedTime by remember { mutableStateOf<Calendar?>(null) }
     var showChart by remember { mutableStateOf(false) }
+    
+    // For Location Searchable Dropdown
+    var locationSearch by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedLocName by remember { mutableStateOf(locationName ?: "") }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
 
-    val state by viewModel.state.collectAsState()
     val selectedL1 by viewModel.selectedL1.collectAsState()
     val selectedL2 by viewModel.selectedL2.collectAsState()
 
@@ -53,6 +65,48 @@ fun BirthKundaliScreen(
 
     val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val sdfTime = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val fileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            viewModel.loadKundali(it) { success, msg ->
+                if (success) {
+                    showChart = true
+                    // Update local UI state from the loaded ViewModel state
+                    val loadedState = viewModel.state.value
+                    nameInput = loadedState.inputName
+                    selectedLocName = loadedState.inputLocationName ?: ""
+                    
+                    // Parse date and time from string if they are in standard formats
+                    try {
+                        val calDate = Calendar.getInstance()
+                        calDate.time = sdfDate.parse(loadedState.inputDate)!!
+                        selectedDate = calDate
+                        
+                        val calTime = Calendar.getInstance()
+                        calTime.time = sdfTime.parse(loadedState.inputTime)!!
+                        selectedTime = calTime
+                    } catch (_: Exception) {}
+                    
+                    scope.launch { snackbarHostState.showSnackbar("Loaded: ${loadedState.inputName}") }
+                } else {
+                    scope.launch { snackbarHostState.showSnackbar("Load failed: $msg") }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchLocations()
+    }
+    
+    LaunchedEffect(state.inputName) {
+        if (state.inputName.isNotEmpty()) nameInput = state.inputName
+    }
 
     val valueFontWeight = if (lang == "kn") FontWeight.Normal else FontWeight.Bold
 
@@ -90,6 +144,7 @@ fun BirthKundaliScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(TranslationUtils.translate("Birth Kundali", lang)) },
@@ -98,6 +153,21 @@ fun BirthKundaliScreen(
                         if (showChart) showChart = false else navController.popBackStack() 
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (showChart) {
+                        IconButton(onClick = {
+                            viewModel.saveKundali(savePath) { success, msg ->
+                                scope.launch { snackbarHostState.showSnackbar(if (success) msg ?: "Saved!" else "Save failed: $msg") }
+                            }
+                        }) {
+                            Icon(Icons.Default.Save, contentDescription = "Save")
+                        }
+                    } else {
+                        IconButton(onClick = { fileLauncher.launch(arrayOf("application/json", "application/octet-stream")) }) {
+                            Icon(Icons.Default.FolderOpen, contentDescription = "Load")
+                        }
                     }
                 }
             )
@@ -112,6 +182,18 @@ fun BirthKundaliScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Button(
+                    onClick = { fileLauncher.launch(arrayOf("application/json", "application/octet-stream")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+                ) {
+                    Icon(Icons.Default.FolderOpen, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(TranslationUtils.translate("Load Saved Details", lang))
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = nameInput,
                     onValueChange = { nameInput = it },
@@ -143,14 +225,57 @@ fun BirthKundaliScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Place of Birth Searchable Dropdown
+                val filteredLocations = state.locations.filter { it.name.contains(locationSearch, ignoreCase = true) }
+                
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = if (expanded) locationSearch else selectedLocName,
+                        onValueChange = { 
+                            locationSearch = it
+                            if (!expanded) expanded = true
+                        },
+                        label = { Text(TranslationUtils.translate("Place of Birth", lang)) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        placeholder = { Text(TranslationUtils.translate("Search Location", lang)) }
+                    )
+                    
+                    if (filteredLocations.isNotEmpty()) {
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            filteredLocations.take(10).forEach { loc ->
+                                DropdownMenuItem(
+                                    text = { Text(loc.name) },
+                                    onClick = {
+                                        selectedLocName = loc.name
+                                        locationSearch = loc.name
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { 
                         if (selectedDate != null && selectedTime != null) {
+                            val finalLocName = if (selectedLocName.isNotEmpty()) selectedLocName else locationName
                             viewModel.fetchData(
-                                lat = location?.first,
-                                lon = location?.second,
-                                location = locationName,
+                                lat = if (finalLocName == null) location?.first else null,
+                                lon = if (finalLocName == null) location?.second else null,
+                                location = finalLocName,
                                 date = sdfDate.format(selectedDate!!.time),
                                 time = sdfTime.format(selectedTime!!.time),
                                 name = nameInput,

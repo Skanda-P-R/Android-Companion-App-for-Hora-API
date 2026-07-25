@@ -1,4 +1,4 @@
-# Hora Companion Android (Beta v0.4.0)
+# Hora Companion Android (Beta v0.5.0)
 
 A native Android application providing real-time astrological (Panchanga) and Hora data by consuming a dedicated Flask REST API. Designed with high-density Home Screen widgets and full Kannada language support.
 
@@ -10,6 +10,8 @@ A native Android application providing real-time astrological (Panchanga) and Ho
 - **Solar & Celestial Insights**: Human-readable data for Sunrise, Sunset, Solar Noon, durations, and Sun/Moon Rasi positions.
 - **Muhurta Timings**: Dedicated view for Rahu Kalam, Gulika, Yamaganda, and Abhijit Muhurta for any selected date.
 - **Birth & Transit Kundali (SVG)**: View real-time transit charts or generate Janma Kundali (Birth Charts) with perfectly sharp SVG vector rendering.
+- **Secure Kundali Vault**: Save generated Birth Kundalis locally with encrypted JSON storage. Load saved charts instantly for offline viewing.
+- **Intelligent Place of Birth Search**: Integrated searchable birth location dropdown with pre-fetched API data for zero-latency selection.
 - **Vimshottari Dasha Explorer**: Integrated multi-tab interface in Kundali screens to view Moon details, Dasha balance, and a hierarchical 3-level Dasha timeline (Mahadasha, Antardasha, Pratyantardasha).
 - **Advanced Location Registry**: Switch between automatic GPS tracking and a searchable manual location database with A-Z indexing and custom entry support.
 - **High-Density Widgets**: Android Home Screen widgets built with Jetpack Glance, featuring a realistic selection picker and curved modern previews.
@@ -22,6 +24,7 @@ Introduced in v0.2.0, the app implements a robust security layer:
 - **Device-Bound Identity**: Uses a stable hardware identifier (`ANDROID_ID`) so your login persists even after app reinstalls.
 - **Passwordless Flow**: Authenticate using just your username; the app handles hardware verification automatically.
 - **Bearer Token Auth**: All API communication is secured using JWT/Bearer tokens with automatic session invalidation.
+- **Local Data Encryption**: Saved Kundali files are encrypted using AES, ensuring that sensitive birth data remains unreadable by other applications.
 - **Privacy Guard**: Network logging is strictly limited to Debug builds; production logs are completely silenced.
 
 ## Tech Stack

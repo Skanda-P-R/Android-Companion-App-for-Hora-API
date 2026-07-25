@@ -3,16 +3,41 @@ package com.hora.companion.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hora.companion.repository.HoraRepository
-import com.hora.companion.models.DashaResponse
-import com.hora.companion.models.DashaPeriod
+import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.documentfile.provider.DocumentFile
 import coil.imageLoader
 import coil.request.ImageRequest
+import com.hora.companion.models.DashaResponse
+import com.hora.companion.models.DashaPeriod
+import com.hora.companion.models.LocationData
+import com.hora.companion.utils.EncryptionUtils
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import java.io.File
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.net.URLEncoder
+
+data class SavedKundali(
+    val name: String,
+    val date: String,
+    val time: String,
+    val locationName: String?,
+    val lat: Double?,
+    val lon: Double?,
+    val dashaResponse: DashaResponse,
+    val chartUrl: String?
+)
 
 data class BirthState(
     val isLoading: Boolean = false,
@@ -21,7 +46,12 @@ data class BirthState(
     val error: String? = null,
     val inputName: String = "",
     val inputDate: String = "",
-    val inputTime: String = ""
+    val inputTime: String = "",
+    val inputLocationName: String? = null,
+    val inputLat: Double? = null,
+    val inputLon: Double? = null,
+    val locations: List<LocationData> = emptyList(),
+    val isFetchingLocations: Boolean = false
 )
 
 class BirthViewModel(
@@ -30,6 +60,9 @@ class BirthViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(BirthState())
     val state: StateFlow<BirthState> = _state
+
+    private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+    private val savedKundaliAdapter = moshi.adapter(SavedKundali::class.java)
 
     private val _chartLoaded = MutableStateFlow(false)
     val chartLoaded: StateFlow<Boolean> = _chartLoaded
@@ -59,7 +92,10 @@ class BirthViewModel(
                 error = null,
                 inputName = name,
                 inputDate = date,
-                inputTime = time
+                inputTime = time,
+                inputLocationName = location,
+                inputLat = lat,
+                inputLon = lon
             )
             _chartLoaded.value = false
             _selectedL1.value = null
@@ -72,7 +108,7 @@ class BirthViewModel(
                 val chartUrl = buildString {
                     append("${normalizedBase}api/v1/kundali/birth/svg?")
                     if (location != null) {
-                        append("location=${java.net.URLEncoder.encode(location, "UTF-8")}")
+                        append("location=${URLEncoder.encode(location, "UTF-8")}")
                     } else if (lat != null && lon != null) {
                         append("lat=$lat&lon=$lon")
                     } else {
@@ -81,7 +117,7 @@ class BirthViewModel(
                     append("&date=$date")
                     append("&time=$time")
                     if (name.isNotEmpty()) {
-                        append("&name=${java.net.URLEncoder.encode(name, "UTF-8")}")
+                        append("&name=${URLEncoder.encode(name, "UTF-8")}")
                     }
                     append("&lang=$apiLang")
                 }
@@ -132,6 +168,147 @@ class BirthViewModel(
 
     fun selectL2(period: DashaPeriod?) {
         _selectedL2.value = period
+    }
+
+    fun fetchLocations() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isFetchingLocations = true)
+            val res = repo.fetchLocations()
+            if (res.isSuccess) {
+                val map = res.getOrNull() ?: emptyMap()
+                val locList = map.map { (name, data) ->
+                    LocationData(
+                        name = name,
+                        latitude = (data["latitude"] as? Number)?.toDouble() ?: 0.0,
+                        longitude = (data["longitude"] as? Number)?.toDouble() ?: 0.0,
+                        timezone = data["timezone"]?.toString(),
+                        description = data["description"]?.toString()
+                    )
+                }.sortedBy { it.name }
+                _state.value = _state.value.copy(locations = locList, isFetchingLocations = false)
+            } else {
+                _state.value = _state.value.copy(isFetchingLocations = false)
+            }
+        }
+    }
+
+    fun saveKundali(saveUri: String?, onResult: (Boolean, String?) -> Unit) {
+        val currentState = _state.value
+        val dasha = currentState.dashaResponse ?: return
+        
+        try {
+            val savedData = SavedKundali(
+                name = currentState.inputName,
+                date = currentState.inputDate,
+                time = currentState.inputTime,
+                locationName = currentState.inputLocationName,
+                lat = currentState.inputLat,
+                lon = currentState.inputLon,
+                dashaResponse = dasha,
+                chartUrl = currentState.chartUrl
+            )
+            
+            val json = savedKundaliAdapter.toJson(savedData)
+            val encrypted = EncryptionUtils.encrypt(json)
+            val fileName = "${currentState.inputName} - ${currentState.inputDate}.json"
+            
+            if (saveUri.isNullOrEmpty()) {
+                // Use MediaStore for public Documents/Kundalis on API 29+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val resolver = context.contentResolver
+                    val contentUri = MediaStore.Files.getContentUri("external")
+                    
+                    // Cleanup existing file with same name in same path
+                    val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+                    val relativePath = "${Environment.DIRECTORY_DOCUMENTS}/Kundalis/"
+                    resolver.delete(contentUri, selection, arrayOf(fileName, relativePath))
+
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+                    }
+
+                    val uri = resolver.insert(contentUri, contentValues)
+                        ?: throw Exception("Could not create file in MediaStore")
+                        
+                    resolver.openOutputStream(uri)?.use { output ->
+                        OutputStreamWriter(output).use { it.write(encrypted) }
+                    }
+                    onResult(true, "Saved in Documents/Kundalis")
+                } else {
+                    // Fallback for older devices or as a secondary option
+                    @Suppress("DEPRECATION")
+                    val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Kundalis")
+                    if (!directory.exists()) directory.mkdirs()
+                    val file = File(directory, fileName)
+                    file.writeText(encrypted)
+                    onResult(true, "Saved in Documents/Kundalis")
+                }
+            } else {
+                val treeUri = Uri.parse(saveUri)
+                
+                val rootFolder = DocumentFile.fromTreeUri(context, treeUri)
+                if (rootFolder == null || !rootFolder.canWrite()) {
+                    // If custom folder fails, fallback to MediaStore default instead of failing
+                    return saveKundali(null, onResult)
+                }
+                
+                // Create or get "Kundalis" subfolder
+                var targetFolder = rootFolder.findFile("Kundalis")
+                if (targetFolder == null || !targetFolder.isDirectory) {
+                    targetFolder = rootFolder.createDirectory("Kundalis")
+                }
+                
+                if (targetFolder == null) throw Exception("Could not create Kundalis folder")
+                
+                // Check if file exists to overwrite (SAF doesn't overwrite by default)
+                val existingFile = targetFolder.findFile(fileName)
+                existingFile?.delete()
+                
+                // Create the file
+                val documentFile = targetFolder.createFile("application/json", fileName)
+                    ?: throw Exception("Could not create file")
+                
+                context.contentResolver.openOutputStream(documentFile.uri)?.use { output ->
+                    OutputStreamWriter(output).use { writer ->
+                        writer.write(encrypted)
+                    }
+                }
+                onResult(true, "Saved in ${rootFolder.name}/Kundalis")
+            }
+        } catch (e: Exception) {
+            onResult(false, e.message)
+        }
+    }
+
+    fun loadKundali(uri: Uri, onResult: (Boolean, String?) -> Unit) {
+        try {
+            val encrypted = context.contentResolver.openInputStream(uri)?.use { input ->
+                InputStreamReader(input).use { reader ->
+                    reader.readText()
+                }
+            } ?: throw Exception("Could not read file")
+            
+            val json = EncryptionUtils.decrypt(encrypted)
+            val savedData = savedKundaliAdapter.fromJson(json) ?: throw Exception("Invalid data")
+            
+            _state.value = _state.value.copy(
+                isLoading = false,
+                dashaResponse = savedData.dashaResponse,
+                chartUrl = savedData.chartUrl,
+                error = null,
+                inputName = savedData.name,
+                inputDate = savedData.date,
+                inputTime = savedData.time,
+                inputLocationName = savedData.locationName,
+                inputLat = savedData.lat,
+                inputLon = savedData.lon
+            )
+            onResult(true, null)
+        } catch (e: Exception) {
+            onResult(false, e.message)
+        }
     }
 
     fun formatDecimalYears(decimalYears: Double): String {

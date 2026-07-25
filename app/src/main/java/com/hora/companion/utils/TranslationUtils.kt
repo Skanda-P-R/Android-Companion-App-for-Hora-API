@@ -86,7 +86,18 @@ object TranslationUtils {
         "Entered Details" to "ನಮೂದಿಸಿದ ವಿವರಗಳು",
         "Name:" to "ಹೆಸರು:",
         "Date:" to "ದಿನಾಂಕ:",
-        "Time:" to "ಸಮಯ:"
+        "Time:" to "ಸಮಯ:",
+        "Load Saved Details" to "ಉಳಿಸಿದ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಿ",
+        "Place of Birth" to "ಹುಟ್ಟಿದ ಸ್ಥಳ",
+        "Search Location" to "ಸ್ಥಳವನ್ನು ಹುಡುಕಿ",
+        "Saved!" to "ಉಳಿಸಲಾಗಿದೆ!",
+        "Save failed:" to "ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ:",
+        "Load failed:" to "ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ:",
+        "Kundali Save Location" to "ಕುಂಡಲಿ ಉಳಿಸುವ ಸ್ಥಳ",
+        "Default: Documents/Kundalis" to "ಡೀಫಾಲ್ಟ್: Documents/Kundalis",
+        "Custom Path" to "ಕಸ್ಟಮ್ ಪಾತ್",
+        "Save Path" to "ಪಾತ್ ಉಳಿಸಿ",
+        "Select Save Folder" to "ಫೋಲ್ಡರ್ ಆಯ್ಕೆಮಾಡಿ"
     )
 
     fun translate(value: String, lang: String, category: String = "ui"): String {
