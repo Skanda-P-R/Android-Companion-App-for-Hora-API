@@ -82,7 +82,8 @@ interface HoraApiService {
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("lang") lang: String = "en",
+        @Query("chart_style") chartStyle: String? = null
     ): ResponseBody
 
     @GET("api/v1/kundali/birth/svg")
@@ -93,11 +94,23 @@ interface HoraApiService {
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
         @Query("name") name: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("lang") lang: String = "en",
+        @Query("chart_style") chartStyle: String? = null
     ): ResponseBody
 
     @GET("api/v1/dasha")
     suspend fun getDasha(
+        @Query("lat") lat: Double? = null,
+        @Query("lon") lon: Double? = null,
+        @Query("location") location: String? = null,
+        @Query("date") date: String? = null,
+        @Query("time") time: String? = null,
+        @Query("lang") lang: String = "en",
+        @Query("depth") depth: Int? = null
+    ): com.hora.companion.models.DashaResponse
+
+    @GET("api/v1/dasha/birth")
+    suspend fun getBirthDasha(
         @Query("lat") lat: Double? = null,
         @Query("lon") lon: Double? = null,
         @Query("location") location: String? = null,

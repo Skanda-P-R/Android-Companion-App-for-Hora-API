@@ -44,8 +44,8 @@ class MainActivity : ComponentActivity() {
         scheduleBackgroundUpdates()
         val dataStoreManager = DataStoreManager(this)
         setContent {
-            val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "purple")
-            val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
+            val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "blue")
+            val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "system")
             HoraTheme(themeName = currentTheme, themeMode = currentThemeMode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     AppNavigation(this)
@@ -122,6 +122,7 @@ fun AppNavigation(activity: MainActivity) {
     val locationName by dataStoreManager.locationNameFlow.collectAsState(initial = null)
     val locationMode by dataStoreManager.locationModeFlow.collectAsState(initial = "gps")
     val langState by dataStoreManager.langFlow.collectAsState(initial = "en")
+    val chartStyleState by dataStoreManager.chartStyleFlow.collectAsState(initial = "south")
     val sessionToken by authRepository.sessionToken.collectAsState(initial = null)
 
     val launcher = rememberLauncherForActivityResult(
@@ -226,7 +227,8 @@ fun AppNavigation(activity: MainActivity) {
                 apiBase = apiBase,
                 sessionToken = sessionToken,
                 lang = langState,
-                dashaLevel = dashaLevel
+                dashaLevel = dashaLevel,
+                chartStyle = chartStyleState
             )
         }
         composable("birth_kundali") {
@@ -241,7 +243,8 @@ fun AppNavigation(activity: MainActivity) {
                 sessionToken = sessionToken,
                 lang = langState,
                 dashaLevel = dashaLevel,
-                savePath = savePath
+                savePath = savePath,
+                chartStyle = chartStyleState
             )
         }
         composable("locations") {

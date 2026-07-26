@@ -20,9 +20,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.hora.companion.DataStoreManager
 import com.hora.companion.data.AuthRepository
 import com.hora.companion.ui.theme.AppTheme
@@ -37,13 +39,17 @@ fun SettingsScreen(
     authRepository: AuthRepository
 ) {
     val scope = rememberCoroutineScope()
-    var apiUrl by remember { mutableStateOf("https://ndaskka.pythonanywhere.com/") }
     val currentLang by dataStoreManager.langFlow.collectAsState(initial = "en")
-    val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "purple")
-    val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
+    val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "blue")
+    val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "system")
     val currentDashaLevel by dataStoreManager.dashaLevelFlow.collectAsState(initial = 3)
     val currentSavePath by dataStoreManager.savePathFlow.collectAsState(initial = null)
+    val currentChartStyle by dataStoreManager.chartStyleFlow.collectAsState(initial = "south")
     val context = LocalContext.current
+    
+    val userEmail by authRepository.userEmail.collectAsState(initial = null)
+    val userName by authRepository.userName.collectAsState(initial = null)
+    val userPicture by authRepository.userPicture.collectAsState(initial = null)
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -70,9 +76,6 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        apiUrl = dataStoreManager.getApiBase() ?: "https://ndaskka.pythonanywhere.com/"
-    }
 
     Scaffold(
         topBar = {
@@ -94,6 +97,57 @@ fun SettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
+            // Profile Section
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (userPicture != null) {
+                        AsyncImage(
+                            model = userPicture,
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = userName?.take(1)?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column {
+                        Text(
+                            text = userName ?: "User",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = userEmail ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
             Text(
                 if (currentLang == "kn") "ಭಾಷೆ" else "Language", 
                 style = MaterialTheme.typography.titleMedium
@@ -146,27 +200,6 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                if (currentLang == "kn") "API ಸಂರಚನೆ" else "API Configuration", 
-                style = MaterialTheme.typography.titleMedium
-            )
-            TextField(
-                value = apiUrl,
-                onValueChange = { apiUrl = it },
-                label = { Text("Base API URL") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = {
-                scope.launch {
-                    dataStoreManager.saveApiBase(apiUrl)
-                }
-            }) {
-                Text(if (currentLang == "kn") "API URL ಉಳಿಸಿ" else "Save API URL")
-            }
-            
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
@@ -223,6 +256,35 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                if (currentLang == "kn") "ಕುಂಡಲಿ ಚಾರ್ಟ್ ಶೈಲಿ" else "Kundali Chart Style",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Row(Modifier.selectableGroup()) {
+                val chartOptions = listOf(
+                    "north" to if (currentLang == "kn") "ಉತ್ತರ" else "North",
+                    "south" to if (currentLang == "kn") "ದಕ್ಷಿಣ" else "South",
+                    "east" to if (currentLang == "kn") "ಪೂರ್ವ" else "East"
+                )
+                chartOptions.forEach { (style, label) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .selectable(
+                                selected = (currentChartStyle == style),
+                                onClick = { scope.launch { dataStoreManager.saveChartStyle(style) } },
+                                role = Role.RadioButton
+                            )
+                            .padding(8.dp)
+                    ) {
+                        RadioButton(selected = (currentChartStyle == style), onClick = null)
+                        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
                 if (currentLang == "kn") "ಸ್ಥಳ" else "Location", 
@@ -256,7 +318,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.5.0", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.6.0", style = MaterialTheme.typography.bodyMedium)
 
             Spacer(modifier = Modifier.height(32.dp))
 

@@ -20,17 +20,20 @@ class HomeViewModel(private val repo: HoraRepository) : ViewModel() {
 
     fun refresh(context: Context, lat: Double?, lon: Double?, locationName: String? = null, force: Boolean = false) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+            if (force || _state.value.tithi == "--") {
+                _state.value = _state.value.copy(isLoading = true)
+            }
             try {
                 val dataStore = DataStoreManager(context)
                 val lang = dataStore.langFlow.first()
+                val chartStyle = dataStore.chartStyleFlow.first()
 
                 coroutineScope {
                     val panDeferred = async { repo.fetchPanchanga(lat, lon, locationName, lang = lang, force = force) }
                     val muhDeferred = async { repo.fetchMuhurta(lat, lon, locationName, lang = lang, force = force) }
                     val dayDeferred = async { repo.fetchDay(lat, lon, locationName, lang = lang, force = force) }
                     val horaDeferred = async { repo.fetchHora(lat, lon, locationName, lang = lang, force = force) }
-                    val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang) }
+                    val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang, chartStyle = chartStyle) }
 
                     val panRes = panDeferred.await()
                     val muhRes = muhDeferred.await()

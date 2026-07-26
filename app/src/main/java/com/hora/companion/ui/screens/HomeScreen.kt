@@ -33,6 +33,13 @@ fun HomeScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     
+    // Quantize location to avoid jitter triggering refreshes
+    val quantizedLocation = remember(location) {
+        val lat = (location.first * 1000).toInt() / 1000.0
+        val lon = (location.second * 1000).toInt() / 1000.0
+        lat to lon
+    }
+
     var remainingDisplay by remember { mutableStateOf(state.remaining) }
 
     LaunchedEffect(state.horaEndsAt, state.remaining) {
@@ -49,7 +56,7 @@ fun HomeScreen(
                         remainingDisplay = "0 min"
                         if (NetworkUtils.isOnline(context)) {
                             if (locationMode == "gps") {
-                                viewModel.refreshHoraOnly(context, location.first, location.second, null)
+                                viewModel.refreshHoraOnly(context, quantizedLocation.first, quantizedLocation.second, null)
                             } else {
                                 viewModel.refreshHoraOnly(context, null, null, locationName)
                             }
@@ -199,11 +206,24 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(location, locationName, locationMode) {
-        if (locationMode == "gps") {
-            viewModel.refresh(context, location.first, location.second, null)
+    LaunchedEffect(quantizedLocation, locationName, locationMode) {
+        // Only trigger refresh if we don't have data yet or if something changed.
+        // The repository will handle the actual smart caching.
+        if (state.tithi == "--") {
+            if (locationMode == "gps") {
+                viewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null)
+            } else {
+                viewModel.refresh(context, null, null, locationName)
+            }
         } else {
-            viewModel.refresh(context, null, null, locationName)
+            // Periodic check for hora/kundali refresh is handled by the repository logic
+            // but we call refresh once to let the repo decide if it needs to fetch anything.
+            // We use force = false here.
+            if (locationMode == "gps") {
+                viewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null, force = false)
+            } else {
+                viewModel.refresh(context, null, null, locationName, force = false)
+            }
         }
     }
 }

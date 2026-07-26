@@ -1,4 +1,4 @@
-# Hora Companion Android (Beta v0.5.0)
+# Hora Companion Android (Beta v0.6.0)
 
 A native Android application providing real-time astrological (Panchanga) and Hora data by consuming a dedicated Flask REST API. Designed with high-density Home Screen widgets and full Kannada language support.
 
@@ -16,16 +16,17 @@ A native Android application providing real-time astrological (Panchanga) and Ho
 - **Advanced Location Registry**: Switch between automatic GPS tracking and a searchable manual location database with A-Z indexing and custom entry support.
 - **High-Density Widgets**: Android Home Screen widgets built with Jetpack Glance, featuring a realistic selection picker and curved modern previews.
 - **Multilingual Support**: Full English and Kannada support for all UI labels and backend-driven data values.
-- **Security**: Secure, device-bound passwordless authentication tied to unique hardware identifiers.
+- **Modern Authentication**: Secure Google Sign-In with backend email whitelisting for authorized access.
 
 ## Security & Authentication
 
-Introduced in v0.2.0, the app implements a robust security layer:
-- **Device-Bound Identity**: Uses a stable hardware identifier (`ANDROID_ID`) so your login persists even after app reinstalls.
-- **Passwordless Flow**: Authenticate using just your username; the app handles hardware verification automatically.
-- **Bearer Token Auth**: All API communication is secured using JWT/Bearer tokens with automatic session invalidation.
+Introduced in v0.6.0, the app implements a robust identity and authorization layer:
+- **Google Sign-In**: Leverages Jetpack Credential Manager for a secure, one-tap login experience using your Google account.
+- **Email Whitelisting**: Access is strictly limited to pre-approved email addresses managed by the administrator.
+- **ID Token Verification**: The app sends a cryptographically signed Google ID Token to the backend, which is verified using Google's public keys.
+- **Bearer Token Auth**: All subsequent API communication is secured using a session token (JWT/Bearer) with automatic expiration and invalidation.
 - **Local Data Encryption**: Saved Kundali files are encrypted using AES, ensuring that sensitive birth data remains unreadable by other applications.
-- **Privacy Guard**: Network logging is strictly limited to Debug builds; production logs are completely silenced.
+- **Privacy Guard**: Backup is disabled to ensure data is wiped on uninstall, and network logging is silenced in production builds.
 
 ## Tech Stack
 
@@ -33,6 +34,7 @@ Introduced in v0.2.0, the app implements a robust security layer:
 - **Widgets**: Jetpack Glance
 - **Networking**: Retrofit + OkHttp (with custom Interceptors) + Moshi (Kotlin Reflection)
 - **Async**: Kotlin Coroutines & Flow
+- **Authentication**: Jetpack Credential Manager + Google Identity
 - **Security**: Android Keystore & Encrypted Storage
 - **Persistence**: DataStore (Preferences) & Internal Storage
 - **Location**: Google Play Services (Fused Location Provider)
@@ -41,15 +43,15 @@ Introduced in v0.2.0, the app implements a robust security layer:
 ## Quick Start
 
 1. **Clone the repository** and open the project in Android Studio (Ladybug or newer recommended).
-2. **Sync Gradle** and ensure you have Android SDK 34 installed.
-3. **Run the app** and sign in with your registered username.
+2. **Sync Gradle** and ensure you have Android SDK 35 installed.
+3. **Run the app** and sign in with your authorized Google account.
 4. **Grant Location Permissions** to allow the app to fetch local astrological data.
 
 ## Documentation
 
 For more detailed information, please refer to the following documents:
 
-- [**Session Security Plan**](docs/SESSION_SECURITY_PLAN.md): Details on the device-bound authentication and security architecture.
+- [**Security & Authorization**](docs/SECURITY.md): Details on the Google Sign-In integration and backend whitelisting architecture.
 - [**Architecture Overview**](docs/ARCHITECTURE.md): Technical details on the app's structure and design patterns.
 - [**Widget Guide**](docs/WIDGETS.md): Instructions on adding and configuring Home Screen widgets.
 - [**Original Specification**](docs/SPECIFICATION.md): The initial project requirements and goals.

@@ -25,4 +25,9 @@ class CacheManager(private val context: Context) {
         val file = File(dir, name)
         return if (file.exists()) file.readBytes() else null
     }
+
+    fun lastModified(name: String): Long {
+        val file = File(dir, name)
+        return if (file.exists()) file.lastModified() else 0L
+    }
 }

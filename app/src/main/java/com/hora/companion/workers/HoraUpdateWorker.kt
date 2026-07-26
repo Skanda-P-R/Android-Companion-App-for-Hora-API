@@ -47,7 +47,7 @@ class HoraUpdateWorker(appContext: Context, params: WorkerParameters) : Coroutin
             val dayDeferred = async { repo.fetchDay(lat, lon, locationName, lang = lang) }
             
             // Kundali (required for widget)
-            val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang) }
+            val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang, force = false) }
 
             val hRes = horaDeferred.await()
             panDeferred.await()

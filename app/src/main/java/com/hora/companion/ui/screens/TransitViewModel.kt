@@ -48,6 +48,7 @@ class TransitViewModel(
         lang: String,
         apiBase: String,
         depth: Int,
+        chartStyle: String,
         sessionToken: String?
     ) {
         viewModelScope.launch {
@@ -72,6 +73,7 @@ class TransitViewModel(
                     append("&date=$date")
                     append("&time=$time")
                     append("&lang=$apiLang")
+                    append("&chart_style=$chartStyle")
                 }
 
                 // Pre-fetch chart image

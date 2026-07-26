@@ -54,6 +54,47 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         return dateMatch && timeMatch
     }
 
+    private fun isVedicDayActive(): Boolean {
+        val cached = cache.readJson("day.json") ?: return false
+        return try {
+            val obj = JSONObject(cached)
+            val sunriseAtStr = obj.optString("sunrise_at", "")
+            val nextSunriseAtStr = obj.optString("next_sunrise_at", "")
+            val vedicDayDate = obj.optString("vedic_day_date", "")
+            
+            val now = System.currentTimeMillis()
+            val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+            // Primary check: precise timestamps
+            if (sunriseAtStr.isNotEmpty() && nextSunriseAtStr.isNotEmpty()) {
+                try {
+                    val start = ZonedDateTime.parse(sunriseAtStr.replace(" ", "T")).toInstant().toEpochMilli()
+                    val end = ZonedDateTime.parse(nextSunriseAtStr.replace(" ", "T")).toInstant().toEpochMilli()
+                    if (now in (start - 60000)..(end - 60000)) return true
+                } catch (e: Exception) {
+                    Log.e("HoraRepository", "Timestamp parse error: ${e.message}")
+                }
+            }
+            
+            // Secondary check: is it the same calendar day? 
+            // (Vedic day usually overlaps with today's calendar date for the most part)
+            if (vedicDayDate.isNotEmpty()) {
+                return vedicDayDate == todayDate
+            }
+            
+            false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun isFresh(cacheName: String, minutes: Int): Boolean {
+        val lastMod = cache.lastModified(cacheName)
+        if (lastMod == 0L) return false
+        val diff = System.currentTimeMillis() - lastMod
+        return diff < (minutes * 60 * 1000L)
+    }
+
     suspend fun fetchPanchanga(
         lat: Double? = null,
         lon: Double? = null,
@@ -65,10 +106,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         val cacheName = "panchanga.json"
         val online = NetworkUtils.isOnline(context)
         val today = isToday(date)
+        val isCurrentVedicDay = today && isVedicDayActive()
 
-        if (!force && today) {
+        if (!force && isCurrentVedicDay) {
             val cached = cache.readJson(cacheName)
-            if (cached != null && !online) return@withContext Result.success(cached)
+            if (cached != null) return@withContext Result.success(cached)
         }
 
         if (online) {
@@ -99,10 +141,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         val cacheName = "muhurta.json"
         val online = NetworkUtils.isOnline(context)
         val today = isToday(date)
+        val isCurrentVedicDay = today && isVedicDayActive()
 
-        if (!force && today) {
+        if (!force && isCurrentVedicDay) {
             val cached = cache.readJson(cacheName)
-            if (cached != null && !online) return@withContext Result.success(cached)
+            if (cached != null) return@withContext Result.success(cached)
         }
 
         if (online) {
@@ -133,10 +176,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         val cacheName = "day.json"
         val online = NetworkUtils.isOnline(context)
         val today = isToday(date)
+        val isCurrentVedicDay = today && isVedicDayActive()
 
-        if (!force && today) {
+        if (!force && isCurrentVedicDay) {
             val cached = cache.readJson(cacheName)
-            if (cached != null && !online) return@withContext Result.success(cached)
+            if (cached != null) return@withContext Result.success(cached)
         }
 
         if (online) {
@@ -167,23 +211,26 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<String> = withContext(Dispatchers.IO) {
         val cacheName = "hora.json"
         val online = NetworkUtils.isOnline(context)
-        val today = isNow(date, time)
+        val isNow = isNow(date, time)
 
-        if (!force && today) {
+        if (!force && isNow) {
             val cached = cache.readJson(cacheName)
             if (cached != null) {
                 try {
                     val obj = JSONObject(cached)
                     val hora = obj.getJSONObject("hora")
                     val endsAtStr = hora.getString("ends_at")
-                    // Simple manual parse for ISO timestamp to support API 21+ without desugaring
-                    val endsAt = try {
-                        ZonedDateTime.parse(endsAtStr).toInstant().toEpochMilli()
-                    } catch (e: Exception) {
-                        // Fallback if ZonedDateTime fails on old API
-                        System.currentTimeMillis() - 1 // Assume expired
-                    }
-                    if (System.currentTimeMillis() < endsAt) {
+                    val endsAt = ZonedDateTime.parse(endsAtStr).toInstant().toEpochMilli()
+                    val now = System.currentTimeMillis()
+                    
+                    val freshEnough = isFresh(cacheName, 30)
+                    
+                    if (online) {
+                        if (now < endsAt && freshEnough) {
+                            return@withContext Result.success(cached)
+                        }
+                    } else {
+                        // Offline: use cache even if expired
                         return@withContext Result.success(cached)
                     }
                 } catch (e: Exception) {}
@@ -194,15 +241,15 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
             return@withContext try {
                 val apiLang = if (lang == "kn") "kan" else "en"
                 val json = api.getHora(lat, lon, location, date, time, apiLang).string()
-                if (today) cache.saveJson(cacheName, json)
+                if (isNow) cache.saveJson(cacheName, json)
                 Result.success(json)
             } catch (e: Exception) {
                 val cached = cache.readJson(cacheName)
-                if (today && cached != null) Result.success(cached) else Result.failure(e)
+                if (isNow && cached != null) Result.success(cached) else Result.failure(e)
             }
         } else {
             val cached = cache.readJson(cacheName)
-            return@withContext if (today && cached != null) Result.success(cached) 
+            return@withContext if (isNow && cached != null) Result.success(cached) 
             else Result.failure(Exception("Offline and no cache or expired"))
         }
     }
@@ -289,28 +336,51 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         location: String? = null,
         date: String? = null,
         time: String? = null,
-        lang: String
+        lang: String,
+        chartStyle: String? = null,
+        force: Boolean = false
     ): Result<ByteArray> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val apiLang = if (lang == "kn") "kan" else "en"
-            val resp = api.getKundaliChartRaw(lat, lon, location, date, time, apiLang)
-            val bytes = resp.bytes()
-            
-            // Basic check to see if it's an image or JSON error
-            val firstChars = bytes.take(10).map { it.toInt().toChar() }.joinToString("")
-            if (firstChars.contains("{") || firstChars.contains("error")) {
-                Log.e("HoraRepository", "Received non-image data for kundali: ${String(bytes)}")
-                return@withContext Result.failure(Exception("Server returned error instead of image"))
-            }
+        val cacheName = "kundali.png"
+        val online = NetworkUtils.isOnline(context)
+        val isCurrentMoment = isNow(date, time)
 
-            if (date == null && time == null) {
-                cache.saveBytes("kundali.png", bytes)
+        if (!force && isCurrentMoment) {
+            val cached = cache.readBytes(cacheName)
+            if (cached != null) {
+                if (online) {
+                    if (isFresh(cacheName, 15)) return@withContext Result.success(cached)
+                } else {
+                    return@withContext Result.success(cached)
+                }
             }
-            Result.success(bytes)
-        } catch (e: Exception) {
-            Log.e("HoraRepository", "Error fetching kundali image", e)
+        }
+
+        if (online) {
+            return@withContext try {
+                val apiLang = if (lang == "kn") "kan" else "en"
+                val resp = api.getKundaliChartRaw(lat, lon, location, date, time, apiLang, chartStyle)
+                val bytes = resp.bytes()
+                
+                // Basic check to see if it's an image or JSON error
+                val firstChars = bytes.take(10).map { it.toInt().toChar() }.joinToString("")
+                if (firstChars.contains("{") || firstChars.contains("error")) {
+                    Log.e("HoraRepository", "Received non-image data for kundali: ${String(bytes)}")
+                    return@withContext Result.failure(Exception("Server returned error instead of image"))
+                }
+
+                if (isCurrentMoment) {
+                    cache.saveBytes("kundali.png", bytes)
+                }
+                Result.success(bytes)
+            } catch (e: Exception) {
+                Log.e("HoraRepository", "Error fetching kundali image", e)
+                val cached = cache.readBytes("kundali.png")
+                if (isCurrentMoment && cached != null) Result.success(cached) else Result.failure(e)
+            }
+        } else {
             val cached = cache.readBytes("kundali.png")
-            if (cached != null && date == null && time == null) Result.success(cached) else Result.failure(e)
+            return@withContext if (isCurrentMoment && cached != null) Result.success(cached) 
+            else Result.failure(Exception("Offline and no cache"))
         }
     }
 
@@ -321,11 +391,12 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         date: String? = null,
         time: String? = null,
         name: String? = null,
-        lang: String
+        lang: String,
+        chartStyle: String? = null
     ): Result<ByteArray> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val resp = api.getBirthChartRaw(lat, lon, location, date, time, name, apiLang)
+            val resp = api.getBirthChartRaw(lat, lon, location, date, time, name, apiLang, chartStyle)
             Result.success(resp.bytes())
         } catch (e: Exception) {
             Result.failure(e)
@@ -347,6 +418,25 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
             Result.success(resp)
         } catch (e: Exception) {
             Log.e("HoraRepository", "Error fetching dasha", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun fetchBirthDasha(
+        lat: Double? = null,
+        lon: Double? = null,
+        location: String? = null,
+        date: String? = null,
+        time: String? = null,
+        lang: String,
+        depth: Int? = null
+    ): Result<DashaResponse> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val apiLang = if (lang == "kn") "kan" else "en"
+            val resp = api.getBirthDasha(lat, lon, location, date, time, apiLang, depth)
+            Result.success(resp)
+        } catch (e: Exception) {
+            Log.e("HoraRepository", "Error fetching birth dasha", e)
             Result.failure(e)
         }
     }

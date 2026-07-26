@@ -84,6 +84,7 @@ class BirthViewModel(
         lang: String,
         apiBase: String,
         depth: Int,
+        chartStyle: String,
         sessionToken: String?
     ) {
         viewModelScope.launch {
@@ -120,6 +121,7 @@ class BirthViewModel(
                         append("&name=${URLEncoder.encode(name, "UTF-8")}")
                     }
                     append("&lang=$apiLang")
+                    append("&chart_style=$chartStyle")
                 }
 
                 // Pre-fetch chart image
@@ -138,7 +140,7 @@ class BirthViewModel(
                 }
 
                 val dashaDeferred = async { 
-                    repo.fetchDasha(lat, lon, location, date, time, lang, depth)
+                    repo.fetchBirthDasha(lat, lon, location, date, time, lang, depth)
                 }
 
                 val dashaResult = dashaDeferred.await()

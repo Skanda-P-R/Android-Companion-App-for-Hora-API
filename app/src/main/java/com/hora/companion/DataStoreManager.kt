@@ -23,6 +23,7 @@ class DataStoreManager(private val context: Context) {
         val KEY_THEME_MODE = stringPreferencesKey("key_theme_mode")
         val KEY_DASHA_LEVEL = androidx.datastore.preferences.core.intPreferencesKey("key_dasha_level")
         val KEY_SAVE_PATH = stringPreferencesKey("key_save_path")
+        val KEY_CHART_STYLE = stringPreferencesKey("key_chart_style") // "north", "south", "east"
     }
 
     val locationFlow: Flow<Pair<Double, Double>?> = context.dataStore.data.map { prefs ->
@@ -48,11 +49,11 @@ class DataStoreManager(private val context: Context) {
     }
 
     val themeFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_THEME] ?: "purple"
+        prefs[KEY_THEME] ?: "blue"
     }
 
     val themeModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_THEME_MODE] ?: "light"
+        prefs[KEY_THEME_MODE] ?: "system"
     }
 
     val dashaLevelFlow: Flow<Int> = context.dataStore.data.map { prefs ->
@@ -61,6 +62,10 @@ class DataStoreManager(private val context: Context) {
 
     val savePathFlow: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[KEY_SAVE_PATH]
+    }
+
+    val chartStyleFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CHART_STYLE] ?: "south"
     }
 
     suspend fun saveLocation(lat: Double, lon: Double, name: String? = null, mode: String? = null) {
@@ -121,6 +126,12 @@ class DataStoreManager(private val context: Context) {
     suspend fun saveSavePath(path: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SAVE_PATH] = path
+        }
+    }
+
+    suspend fun saveChartStyle(style: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_CHART_STYLE] = style
         }
     }
 }

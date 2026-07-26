@@ -1,26 +1,49 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
 android {
     namespace = "com.hora.companion"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.hora.companion"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 34
-        versionCode = 7
-        versionName = "0.5.0"
+        versionCode = 9
+        versionName = "0.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"191782211549-ai1b8fbs3m4r2lc3ahhuhmjucg9n7di6.apps.googleusercontent.com\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            val path = localProperties.getProperty("KEYSTORE_PATH")?.removeSurrounding("\"") ?: ""
+            storeFile = file(path)
+            storePassword = localProperties.getProperty("KEYSTORE_PASSWORD")
+            keyAlias = localProperties.getProperty("KEY_ALIAS")
+            keyPassword = localProperties.getProperty("KEY_PASSWORD")
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -75,6 +98,11 @@ dependencies {
 
     // Security
     implementation("androidx.security:security-crypto:1.1.0")
+    
+    // Credential Manager
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.1.0")

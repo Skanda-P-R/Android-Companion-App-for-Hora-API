@@ -36,7 +36,8 @@ fun TransitKundaliScreen(
     apiBase: String,
     sessionToken: String?,
     lang: String = "en",
-    dashaLevel: Int = 3
+    dashaLevel: Int = 3,
+    chartStyle: String = "south"
 ) {
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedTime by remember { mutableStateOf(Calendar.getInstance()) }
@@ -58,7 +59,7 @@ fun TransitKundaliScreen(
     val valueFontWeight = if (lang == "kn") FontWeight.Normal else FontWeight.Bold
 
     // Initial and on-change fetch
-    LaunchedEffect(selectedDate, selectedTime, location, locationName, dashaLevel) {
+    LaunchedEffect(selectedDate, selectedTime, location, locationName, dashaLevel, chartStyle) {
         viewModel.fetchData(
             lat = location?.first,
             lon = location?.second,
@@ -68,6 +69,7 @@ fun TransitKundaliScreen(
             lang = lang,
             apiBase = apiBase,
             depth = dashaLevel,
+            chartStyle = chartStyle,
             sessionToken = sessionToken
         )
     }

@@ -40,7 +40,8 @@ fun BirthKundaliScreen(
     sessionToken: String?,
     lang: String = "en",
     dashaLevel: Int = 3,
-    savePath: String? = null
+    savePath: String? = null,
+    chartStyle: String = "south"
 ) {
     val state by viewModel.state.collectAsState()
     
@@ -282,6 +283,7 @@ fun BirthKundaliScreen(
                                 lang = lang,
                                 apiBase = apiBase,
                                 depth = dashaLevel,
+                                chartStyle = chartStyle,
                                 sessionToken = sessionToken
                             )
                             showChart = true 

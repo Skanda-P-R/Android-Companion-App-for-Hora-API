@@ -1,6 +1,6 @@
 package com.hora.companion.api
 
-import com.hora.companion.api.models.LoginRequest
+import com.hora.companion.api.models.GoogleLoginRequest
 import com.hora.companion.api.models.LoginResponse
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -11,8 +11,8 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthService {
-    @POST("api/v1/auth/login")
-    suspend fun login(@Body request: LoginRequest): LoginResponse
+    @POST("api/v1/auth/google-login")
+    suspend fun googleLogin(@Body request: GoogleLoginRequest): LoginResponse
 
     companion object {
         fun create(
