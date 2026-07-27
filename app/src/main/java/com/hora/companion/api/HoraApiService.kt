@@ -120,6 +120,9 @@ interface HoraApiService {
         @Query("depth") depth: Int? = null
     ): com.hora.companion.models.DashaResponse
 
+    @POST("api/v1/auth/logout")
+    suspend fun logout(): ResponseBody
+
     @GET("api/v1/locations")
     suspend fun getLocations(): Map<String, @JvmSuppressWildcards Map<String, @JvmSuppressWildcards Any>>
 

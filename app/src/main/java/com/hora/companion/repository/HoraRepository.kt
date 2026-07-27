@@ -470,6 +470,22 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         }
     }
 
+    suspend fun logout(): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val responseBody = api.logout()
+            val json = responseBody.string()
+            val obj = JSONObject(json)
+            if (obj.optString("status") == "logged_out") {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Logout failed: Unexpected response status"))
+            }
+        } catch (e: Exception) {
+            Log.e("HoraRepository", "Logout error", e)
+            Result.failure(e)
+        }
+    }
+
     fun mergeToState(
         panchangaJson: String? = null,
         muhurtaJson: String? = null,

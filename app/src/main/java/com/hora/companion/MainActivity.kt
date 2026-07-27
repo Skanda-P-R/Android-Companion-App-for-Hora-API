@@ -259,7 +259,8 @@ fun AppNavigation(activity: MainActivity) {
             SettingsScreen(
                 navController = navController,
                 dataStoreManager = dataStoreManager,
-                authRepository = authRepository
+                authRepository = authRepository,
+                repo = horaRepository
             )
         }
     }

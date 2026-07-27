@@ -36,9 +36,13 @@ import androidx.documentfile.provider.DocumentFile
 fun SettingsScreen(
     navController: NavController, 
     dataStoreManager: DataStoreManager,
-    authRepository: AuthRepository
+    authRepository: AuthRepository,
+    repo: com.hora.companion.repository.HoraRepository
 ) {
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var isLoggingOut by remember { mutableStateOf(false) }
+
     val currentLang by dataStoreManager.langFlow.collectAsState(initial = "en")
     val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "blue")
     val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "system")
@@ -87,7 +91,8 @@ fun SettingsScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         val scrollState = rememberScrollState()
         Column(
@@ -324,17 +329,37 @@ fun SettingsScreen(
 
             Button(
                 onClick = {
+                    if (isLoggingOut) return@Button
+                    isLoggingOut = true
                     scope.launch {
-                        authRepository.clearSessionToken()
-                        navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
+                        val result = repo.logout()
+                        if (result.isSuccess) {
+                            authRepository.clearSessionToken()
+                            navController.navigate("login") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        } else {
+                            isLoggingOut = false
+                            snackbarHostState.showSnackbar(
+                                if (currentLang == "kn") "ಲಾಗ್ ಔಟ್ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." 
+                                else "Logout failed. Please try again."
+                            )
                         }
                     }
                 },
+                enabled = !isLoggingOut,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (currentLang == "kn") "ಲಾಗ್ ಔಟ್" else "Logout")
+                if (isLoggingOut) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onError,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(if (currentLang == "kn") "ಲಾಗ್ ಔಟ್" else "Logout")
+                }
             }
         }
     }
