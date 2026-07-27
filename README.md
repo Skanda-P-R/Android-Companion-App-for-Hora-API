@@ -16,13 +16,12 @@ A native Android application providing real-time astrological (Panchanga) and Ho
 - **Advanced Location Registry**: Switch between automatic GPS tracking and a searchable manual location database with A-Z indexing and custom entry support.
 - **High-Density Widgets**: Android Home Screen widgets built with Jetpack Glance, featuring a realistic selection picker and curved modern previews.
 - **Multilingual Support**: Full English and Kannada support for all UI labels and backend-driven data values.
-- **Modern Authentication**: Secure Google Sign-In with backend email whitelisting for authorized access.
+- **Modern Authentication**: Secure Google Sign-In for seamless access using your existing Google account.
 
 ## Security & Authentication
 
 Introduced in v0.6.0, the app implements a robust identity and authorization layer:
 - **Google Sign-In**: Leverages Jetpack Credential Manager for a secure, one-tap login experience using your Google account.
-- **Email Whitelisting**: Access is strictly limited to pre-approved email addresses managed by the administrator.
 - **ID Token Verification**: The app sends a cryptographically signed Google ID Token to the backend, which is verified using Google's public keys.
 - **Bearer Token Auth**: All subsequent API communication is secured using a session token (JWT/Bearer) with automatic expiration and invalidation.
 - **Local Data Encryption**: Saved Kundali files are encrypted using AES, ensuring that sensitive birth data remains unreadable by other applications.
@@ -44,7 +43,7 @@ Introduced in v0.6.0, the app implements a robust identity and authorization lay
 
 1. **Clone the repository** and open the project in Android Studio (Ladybug or newer recommended).
 2. **Sync Gradle** and ensure you have Android SDK 35 installed.
-3. **Run the app** and sign in with your authorized Google account.
+3. **Run the app** and sign in with your Google account.
 4. **Grant Location Permissions** to allow the app to fetch local astrological data.
 
 ## Documentation

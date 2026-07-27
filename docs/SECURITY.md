@@ -1,6 +1,6 @@
-# Security & Authorization - Google Identity & Email Whitelisting
+# Security & Authorization - Google Identity
 
-This document describes the security architecture implemented in the Hora Companion App as of v0.6.0. The app has moved from a device-bound passwordless identity to a modern verified identity model using Google Sign-In and centralized email whitelisting.
+This document describes the security architecture implemented in the Hora Companion App as of v0.6.0. The app uses a modern verified identity model using Google Sign-In.
 
 ---
 
@@ -16,17 +16,9 @@ The app leverages **Jetpack Credential Manager** to provide a secure and seamles
     *   The token has not expired (`exp`).
 *   **User Metadata**: Successful verification allows the server to securely retrieve the user's verified email, name, and profile picture.
 
-## 2. Authorization (Email Whitelisting)
+## 2. Session Management
 
-Access to the Hora API is restricted to authorized individuals.
-
-*   **Whitelist Model**: The backend maintains a list of pre-approved email addresses.
-*   **Access Denial**: If a user signs in with a Google account whose email is not in the whitelist, the backend returns a `403 Forbidden` response.
-*   **Admin Management**: Users are added to the whitelist via administrative CLI commands on the server (`flask add-user <email>`).
-
-## 3. Session Management
-
-*   **Bearer Token Auth**: After verifying the Google identity and checking the whitelist, the server issues a custom session token.
+*   **Bearer Token Auth**: After verifying the Google identity, the server issues a custom session token.
 *   **DataStore Persistence**: The session token and basic user profile (name, picture) are stored locally using **Jetpack DataStore**.
 *   **Automatic Invalidation**: The app monitors for `401 Unauthorized` responses. If detected, it immediately clears the local session and redirects the user to the login screen.
 *   **Logout**: Users can explicitly log out from the Settings screen, which wipes all session and profile data.

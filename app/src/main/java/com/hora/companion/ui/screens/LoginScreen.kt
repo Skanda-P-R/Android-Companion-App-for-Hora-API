@@ -38,7 +38,7 @@ fun LoginScreen(
         )
 
         Text(
-            text = "Pre-approved access only. Please sign in with your authorized Google account.",
+            text = "Please sign in with your Google account to access your astrological data.",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 48.dp),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
