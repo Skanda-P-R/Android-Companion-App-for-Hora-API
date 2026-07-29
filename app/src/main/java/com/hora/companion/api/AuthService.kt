@@ -1,5 +1,6 @@
 package com.hora.companion.api
 
+import com.hora.companion.BuildConfig
 import com.hora.companion.api.models.GoogleLoginRequest
 import com.hora.companion.api.models.LoginResponse
 import com.squareup.moshi.Moshi
@@ -16,7 +17,7 @@ interface AuthService {
 
     companion object {
         fun create(
-            baseUrl: String = "https://ndaskka.pythonanywhere.com/",
+            baseUrl: String = BuildConfig.BASE_URL,
             client: OkHttpClient? = null
         ): AuthService {
             val moshi = Moshi.Builder()

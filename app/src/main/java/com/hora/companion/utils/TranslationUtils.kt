@@ -36,6 +36,8 @@ object TranslationUtils {
         "Solar & Celestial" to "ಸೌರ ಮತ್ತು ಚಂದ್ರ",
         "Timings" to "ಸಮಯಗಳು",
         "Hora" to "ಹೋರೆ",
+        "Day Hora" to "ಹಗಲು ಹೋರೆ",
+        "Night Hora" to "ರಾತ್ರಿ ಹೋರೆ",
         "Calendar" to "ಪಂಚಾಂಗ ವಿವರ",
         "Samvatsara" to "ಸಂವತ್ಸರ",
         "Ayana" to "ಅಯನ",

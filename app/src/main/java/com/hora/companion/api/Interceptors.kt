@@ -5,16 +5,15 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
-class AuthInterceptor(private val authRepository: AuthRepository) : Interceptor {
+class AuthInterceptor(private val repository: AuthRepository) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
         
-        // Skip adding Authorization header to the login request itself
         if (original.url.encodedPath.contains("auth/login")) {
             return chain.proceed(original)
         }
         
-        val token = runBlocking { authRepository.getSessionTokenBlocking() }
+        val token = runBlocking { repository.getSessionTokenBlocking() }
         val builder = original.newBuilder()
         if (token != null) {
             builder.header("Authorization", "Bearer $token")
@@ -25,12 +24,12 @@ class AuthInterceptor(private val authRepository: AuthRepository) : Interceptor 
 }
 
 class SessionInvalidationInterceptor(
-    private val onSessionExpired: () -> Unit
+    private val onExpired: () -> Unit
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
         if (response.code == 401) {
-            onSessionExpired()
+            onExpired()
         }
         return response
     }

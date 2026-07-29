@@ -37,7 +37,6 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         val dateMatch = dateStr == null || dateStr == sdfDate.format(now.time)
         val timeMatch = timeStr == null || timeStr == sdfTime.format(now.time)
         
-        // Allow 5 mins grace for time match if specified
         if (dateMatch && timeStr != null) {
             try {
                 val parts = timeStr.split(":")
@@ -47,7 +46,7 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
                     set(Calendar.HOUR_OF_DAY, h)
                     set(Calendar.MINUTE, m)
                 }
-                return Math.abs(target.timeInMillis - now.timeInMillis) < 300000 // 5 mins
+                return Math.abs(target.timeInMillis - now.timeInMillis) < 300000 
             } catch (e: Exception) {}
         }
         
@@ -65,7 +64,6 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
             val now = System.currentTimeMillis()
             val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-            // Primary check: precise timestamps
             if (sunriseAtStr.isNotEmpty() && nextSunriseAtStr.isNotEmpty()) {
                 try {
                     val start = ZonedDateTime.parse(sunriseAtStr.replace(" ", "T")).toInstant().toEpochMilli()
@@ -76,8 +74,6 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
                 }
             }
             
-            // Secondary check: is it the same calendar day? 
-            // (Vedic day usually overlaps with today's calendar date for the most part)
             if (vedicDayDate.isNotEmpty()) {
                 return vedicDayDate == todayDate
             }
@@ -211,30 +207,13 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<String> = withContext(Dispatchers.IO) {
         val cacheName = "hora.json"
         val online = NetworkUtils.isOnline(context)
+        val today = isToday(date)
+        val isCurrentVedicDay = today && isVedicDayActive()
         val isNow = isNow(date, time)
 
-        if (!force && isNow) {
+        if (!force && isCurrentVedicDay) {
             val cached = cache.readJson(cacheName)
-            if (cached != null) {
-                try {
-                    val obj = JSONObject(cached)
-                    val hora = obj.getJSONObject("hora")
-                    val endsAtStr = hora.getString("ends_at")
-                    val endsAt = ZonedDateTime.parse(endsAtStr).toInstant().toEpochMilli()
-                    val now = System.currentTimeMillis()
-                    
-                    val freshEnough = isFresh(cacheName, 30)
-                    
-                    if (online) {
-                        if (now < endsAt && freshEnough) {
-                            return@withContext Result.success(cached)
-                        }
-                    } else {
-                        // Offline: use cache even if expired
-                        return@withContext Result.success(cached)
-                    }
-                } catch (e: Exception) {}
-            }
+            if (cached != null) return@withContext Result.success(cached)
         }
 
         if (online) {
@@ -250,7 +229,7 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         } else {
             val cached = cache.readJson(cacheName)
             return@withContext if (isNow && cached != null) Result.success(cached) 
-            else Result.failure(Exception("Offline and no cache or expired"))
+            else Result.failure(Exception("Offline and no cache"))
         }
     }
 
@@ -361,7 +340,6 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
                 val resp = api.getKundaliChartRaw(lat, lon, location, date, time, apiLang, chartStyle)
                 val bytes = resp.bytes()
                 
-                // Basic check to see if it's an image or JSON error
                 val firstChars = bytes.take(10).map { it.toInt().toChar() }.joinToString("")
                 if (firstChars.contains("{") || firstChars.contains("error")) {
                     Log.e("HoraRepository", "Received non-image data for kundali: ${String(bytes)}")
@@ -490,7 +468,8 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         panchangaJson: String? = null,
         muhurtaJson: String? = null,
         dayJson: String? = null,
-        horaJson: String? = null
+        horaJson: String? = null,
+        targetTimeMillis: Long? = null
     ): PanchangaState {
         var state = PanchangaState()
         
@@ -565,13 +544,33 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
                 val adapter = moshi.adapter(HoraResponse::class.java)
                 val resp = adapter.fromJson(json)
                 resp?.let {
+                    val allHoras = it.dayHora + it.nightHora
+                    val timeToCalculate = targetTimeMillis ?: System.currentTimeMillis()
+                    
+                    val active = allHoras.find { item ->
+                        val start = item.startsAt?.let { s -> ZonedDateTime.parse(s).toInstant().toEpochMilli() } ?: 0L
+                        val end = ZonedDateTime.parse(item.endsAt).toInstant().toEpochMilli()
+                        timeToCalculate in start until end
+                    }
+                    
+                    val nextIdx = if (active != null) allHoras.indexOf(active) + 1 else -1
+                    val next = if (nextIdx in allHoras.indices) allHoras[nextIdx].planet else "--"
+                    
+                    val remainingStr = active?.let { a ->
+                        val end = ZonedDateTime.parse(a.endsAt).toInstant().toEpochMilli()
+                        val diff = (end - timeToCalculate) / 60000
+                        if (diff > 0) "$diff min" else if (diff == 0L) "< 1 min" else "Ended"
+                    } ?: it.hora.remaining
+
                     state = state.copy(
-                        hora = it.hora.planet,
-                        horaSymbol = it.hora.symbol,
-                        horaNext = it.hora.next,
-                        horaEnds = it.hora.ends,
-                        horaEndsAt = it.hora.endsAt,
-                        remaining = it.hora.remaining
+                        hora = active?.planet ?: it.hora.planet,
+                        horaSymbol = active?.symbol ?: it.hora.symbol,
+                        horaNext = next,
+                        horaEnds = active?.ends ?: it.hora.ends,
+                        horaEndsAt = active?.endsAt ?: it.hora.endsAt,
+                        remaining = remainingStr,
+                        dayHoraList = it.dayHora,
+                        nightHoraList = it.nightHora
                     )
                 }
             } catch (e: Exception) { Log.e("HoraRepository", "Error merging hora", e) }

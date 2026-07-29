@@ -1,20 +1,17 @@
 package com.hora.companion.api
 
-import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.DELETE
-import retrofit2.http.Path
-import retrofit2.http.Body
-import retrofit2.http.Query
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import com.hora.companion.data.AuthRepository
 import com.hora.companion.BuildConfig
+import com.hora.companion.data.AuthRepository
+import com.hora.companion.api.AuthInterceptor
+import com.hora.companion.api.SessionInvalidationInterceptor
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import okhttp3.OkHttpClient
+import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.*
 import java.util.concurrent.TimeUnit
 
 interface HoraApiService {
@@ -136,7 +133,7 @@ interface HoraApiService {
         fun create(
             authRepository: AuthRepository,
             onSessionExpired: () -> Unit,
-            baseUrl: String = "https://ndaskka.pythonanywhere.com/"
+            baseUrl: String = BuildConfig.BASE_URL
         ): HoraApiService {
             val logging = HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) {

@@ -40,6 +40,8 @@ data class PanchangaState(
     val daylightMidpointAt: String = "--",
     val dayDuration: String = "--",
     val nightDuration: String = "--",
+    val dayHoraList: List<com.hora.companion.models.HoraListItem> = emptyList(),
+    val nightHoraList: List<com.hora.companion.models.HoraListItem> = emptyList(),
     val moonRasi: String = "--",
     val sunRasi: String = "--",
     val lastUpdated: String = "--",

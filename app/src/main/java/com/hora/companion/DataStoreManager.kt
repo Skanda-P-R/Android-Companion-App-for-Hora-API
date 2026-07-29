@@ -45,7 +45,13 @@ class DataStoreManager(private val context: Context) {
     }
 
     val apiBaseFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_API_BASE] ?: "https://ndaskka.pythonanywhere.com/"
+        val saved = prefs[KEY_API_BASE]
+        // If the saved URL is the old production one, and it differs from current BuildConfig, use BuildConfig
+        if (saved == "https://ndaskka.pythonanywhere.com/" && saved != BuildConfig.BASE_URL) {
+            BuildConfig.BASE_URL
+        } else {
+            saved ?: BuildConfig.BASE_URL
+        }
     }
 
     val themeFlow: Flow<String> = context.dataStore.data.map { prefs ->

@@ -19,11 +19,12 @@ android {
         applicationId = "com.hora.companion"
         minSdk = 23
         targetSdk = 34
-        versionCode = 9
-        versionName = "0.6.0"
+        versionCode = 10
+        versionName = "0.6.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"191782211549-ai1b8fbs3m4r2lc3ahhuhmjucg9n7di6.apps.googleusercontent.com\"")
+        buildConfigField("String", "BASE_URL", "\"https://ndaskka.pythonanywhere.com/\"")
     }
 
     signingConfigs {

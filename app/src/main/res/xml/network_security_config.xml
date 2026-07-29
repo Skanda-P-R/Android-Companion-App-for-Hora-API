@@ -3,7 +3,4 @@
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">ndaskka.pythonanywhere.com</domain>
     </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.31.71</domain>
-    </domain-config>
 </network-security-config>

@@ -323,7 +323,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.6.0", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.6.1", style = MaterialTheme.typography.bodyMedium)
 
             Spacer(modifier = Modifier.height(32.dp))
 

@@ -1,4 +1,4 @@
-# Hora Companion Android (Beta v0.6.0)
+# Hora Companion Android (Beta v0.6.1)
 
 A native Android application providing real-time astrological (Panchanga) and Hora data by consuming a dedicated Flask REST API. Designed with high-density Home Screen widgets and full Kannada language support.
 

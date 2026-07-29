@@ -39,14 +39,15 @@ fun HoraDetailScreen(
     var selectedTime by remember { mutableStateOf(Calendar.getInstance()) }
     
     var state by remember { mutableStateOf(PanchangaState(isLoading = true)) }
+    var remainingDisplay by remember { mutableStateOf(state.remaining) }
     
     val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val sdfTime = SimpleDateFormat("HH:mm", Locale.getDefault())
     val displayDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
-    fun fetchData(force: Boolean = false) {
+    fun fetchData(force: Boolean = false, silent: Boolean = false) {
         scope.launch {
-            state = PanchangaState(isLoading = true)
+            if (!silent) state = PanchangaState(isLoading = true)
             val res = repo.fetchHora(
                 lat = location?.first,
                 lon = location?.second,
@@ -56,11 +57,16 @@ fun HoraDetailScreen(
                 lang = lang,
                 force = force
             )
-            state = if (res.isSuccess) {
-                repo.mergeToState(horaJson = res.getOrNull())
+            val newState = if (res.isSuccess) {
+                repo.mergeToState(
+                    horaJson = res.getOrNull(),
+                    targetTimeMillis = selectedTime.timeInMillis
+                )
             } else {
                 state.copy(isLoading = false, error = res.exceptionOrNull()?.message)
             }
+            state = newState
+            remainingDisplay = newState.remaining
         }
     }
 
@@ -68,31 +74,14 @@ fun HoraDetailScreen(
         fetchData()
     }
 
-    var remainingDisplay by remember { mutableStateOf(state.remaining) }
-
-    LaunchedEffect(state.horaEndsAt, state.remaining) {
+    LaunchedEffect(state.horaEndsAt) {
         while (true) {
-            val endsAtStr = state.horaEndsAt
             val today = Calendar.getInstance()
             val isCurrentTime = sdfDate.format(selectedDate.time) == sdfDate.format(today.time) && 
-                               Math.abs(selectedTime.timeInMillis - today.timeInMillis) < 600000 // within 10 mins
+                               Math.abs(selectedTime.timeInMillis - today.timeInMillis) < 600000 
 
-            if (endsAtStr != null && isCurrentTime) {
-                try {
-                    val endsAt = ZonedDateTime.parse(endsAtStr).toInstant().toEpochMilli()
-                    val now = System.currentTimeMillis()
-                    if (now < endsAt) {
-                        val diffMinutes = (endsAt - now) / 60000
-                        remainingDisplay = if (diffMinutes > 0) "$diffMinutes min" else "< 1 min"
-                    } else {
-                        remainingDisplay = "0 min"
-                        if (NetworkUtils.isOnline(context)) {
-                            fetchData(force = false)
-                        }
-                    }
-                } catch (e: Exception) {
-                    remainingDisplay = state.remaining
-                }
+            if (isCurrentTime) {
+                fetchData(force = false, silent = true)
             } else {
                 remainingDisplay = state.remaining
             }
@@ -199,14 +188,79 @@ fun HoraDetailScreen(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(TranslationUtils.translate("Timeline", lang), style = MaterialTheme.typography.titleSmall)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        DetailRow(TranslationUtils.translate("Next Hora", lang), state.horaNext)
-                    }
-                }
+                HoraListSection(
+                    title = TranslationUtils.translate("Day Hora", lang),
+                    list = state.dayHoraList,
+                    currentHora = state.hora
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                HoraListSection(
+                    title = TranslationUtils.translate("Night Hora", lang),
+                    list = state.nightHoraList,
+                    currentHora = state.hora
+                )
             }
+        }
+    }
+}
+
+@Composable
+fun HoraListSection(
+    title: String,
+    list: List<com.hora.companion.models.HoraListItem>,
+    currentHora: String
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            val now = System.currentTimeMillis()
+            list.forEach { item ->
+                val isCurrent = try {
+                    val start = item.startsAt?.let { ZonedDateTime.parse(it).toInstant().toEpochMilli() } ?: 0L
+                    val end = ZonedDateTime.parse(item.endsAt).toInstant().toEpochMilli()
+                    now in start until end
+                } catch (e: Exception) {
+                    // Fallback to name if parsing fails
+                    item.planet == currentHora
+                }
+                HoraRow(item, isCurrent)
+            }
+        }
+    }
+}
+
+@Composable
+fun HoraRow(item: com.hora.companion.models.HoraListItem, isCurrent: Boolean) {
+    val bgColor = if (isCurrent) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+    val textColor = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        shape = MaterialTheme.shapes.small,
+        color = bgColor
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${item.symbol} ${item.planet}",
+                style = MaterialTheme.typography.bodyLarge,
+                color = textColor
+            )
+            Text(
+                text = "${item.starts ?: ""} - ${item.ends}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
         }
     }
 }
@@ -215,14 +269,6 @@ fun HoraDetailScreen(
 fun DetailItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelSmall)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-fun DetailRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }

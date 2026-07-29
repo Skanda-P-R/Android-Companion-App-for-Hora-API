@@ -24,10 +24,12 @@ class HoraWidget : GlanceAppWidget() {
         val dataStore = DataStoreManager(context)
         val authRepository = AuthRepository(context)
         val lang = dataStore.langFlow.first()
+        val apiBase = dataStore.apiBaseFlow.first()
         
         val api = HoraApiService.create(
             authRepository = authRepository,
-            onSessionExpired = { authRepository.notifySessionExpired() }
+            onSessionExpired = { authRepository.notifySessionExpired() },
+            baseUrl = apiBase
         )
         val repo = HoraRepository(api, context)
         

@@ -73,7 +73,7 @@ fun AppNavigation(activity: MainActivity) {
     val authRepository = remember { AuthRepository(activity) }
     val uuidProvider = remember { DeviceUuidProvider(activity) }
     
-    val apiBase by dataStoreManager.apiBaseFlow.collectAsState(initial = "https://ndaskka.pythonanywhere.com/")
+    val apiBase by dataStoreManager.apiBaseFlow.collectAsState(initial = BuildConfig.BASE_URL)
 
     val logging = remember { 
         okhttp3.logging.HttpLoggingInterceptor().apply {

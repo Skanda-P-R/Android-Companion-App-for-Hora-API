@@ -52,7 +52,19 @@ data class MuhurtaResponse(
 data class HoraResponse(
     val date: String,
     @Json(name = "vedic_day_date") val vedicDayDate: String,
-    val hora: HoraData
+    val hora: HoraData,
+    @Json(name = "day_hora") val dayHora: List<HoraListItem> = emptyList(),
+    @Json(name = "night_hora") val nightHora: List<HoraListItem> = emptyList()
+)
+
+data class HoraListItem(
+    val planet: String,
+    val symbol: String,
+    val number: Int,
+    val starts: String? = null,
+    @Json(name = "starts_at") val startsAt: String? = null,
+    val ends: String,
+    @Json(name = "ends_at") val endsAt: String
 )
 
 data class HoraData(

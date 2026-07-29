@@ -1,4 +1,4 @@
-# Android Companion App Specification (v0.6.0)
+# Android Companion App Specification (v0.6.1)
 
 ## Objective
 

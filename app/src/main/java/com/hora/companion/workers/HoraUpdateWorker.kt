@@ -9,60 +9,49 @@ import com.hora.companion.DataStoreManager
 import com.hora.companion.data.AuthRepository
 import com.hora.companion.utils.WidgetUtils
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.async
 
 class HoraUpdateWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result = coroutineScope {
+    override suspend fun doWork(): Result {
         val dataStoreManager = DataStoreManager(applicationContext)
         val authRepository = AuthRepository(applicationContext)
         
-        val token = authRepository.getSessionTokenBlocking()
-        if (token == null) {
-            return@coroutineScope Result.failure()
-        }
+        authRepository.getSessionTokenBlocking() ?: return Result.failure()
 
-        val api = HoraApiService.create(
-            authRepository = authRepository,
-            onSessionExpired = {
-                authRepository.notifySessionExpired() 
-            }
-        )
-        val repo = HoraRepository(api, applicationContext)
-        
         val location = dataStoreManager.locationFlow.first()
         val locationName = dataStoreManager.locationNameFlow.first()
         val lang = dataStoreManager.langFlow.first()
+        val apiBase = dataStoreManager.apiBaseFlow.first()
         
         try {
+            val api = HoraApiService.create(
+                authRepository = authRepository,
+                onSessionExpired = {
+                    authRepository.notifySessionExpired()
+                },
+                baseUrl = apiBase
+            )
+            val repo = HoraRepository(api, applicationContext)
+            
             val lat = location?.first
             val lon = location?.second
 
-            // Update Hora (frequent)
-            val horaDeferred = async { repo.fetchHora(lat, lon, locationName, lang = lang) }
+            // These will only hit the network if the Vedic Day has changed
+            repo.fetchDay(lat, lon, locationName, lang = lang, force = false)
+            repo.fetchPanchanga(lat, lon, locationName, lang = lang, force = false)
+            repo.fetchMuhurta(lat, lon, locationName, lang = lang, force = false)
+            repo.fetchHora(lat, lon, locationName, lang = lang, force = false)
             
-            // Update Daily parts (repo handles once-per-day caching internally)
-            val panDeferred = async { repo.fetchPanchanga(lat, lon, locationName, lang = lang) }
-            val muhDeferred = async { repo.fetchMuhurta(lat, lon, locationName, lang = lang) }
-            val dayDeferred = async { repo.fetchDay(lat, lon, locationName, lang = lang) }
-            
-            // Kundali (required for widget)
-            val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang, force = false) }
+            // Force Kundali update to keep the chart fresh on the widget
+            val kundaliRes = repo.fetchKundaliImage(lat, lon, locationName, lang = lang, force = true)
 
-            val hRes = horaDeferred.await()
-            panDeferred.await()
-            muhDeferred.await()
-            dayDeferred.await()
-            kundaliDeferred.await()
-
-            if (hRes.isSuccess) {
+            return if (kundaliRes.isSuccess) {
                 WidgetUtils.updateAllWidgets(applicationContext)
                 Result.success()
             } else {
                 Result.retry()
             }
-        } catch (e: Exception) {
-            Result.retry()
+        } catch (_: Exception) {
+            return Result.retry()
         }
     }
 }
