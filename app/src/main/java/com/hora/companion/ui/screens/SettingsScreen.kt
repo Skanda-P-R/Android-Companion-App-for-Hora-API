@@ -323,7 +323,27 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("Hora Companion v0.6.1", style = MaterialTheme.typography.bodyMedium)
+            Text("Hora Companion v0.6.2", style = MaterialTheme.typography.bodyMedium)
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { navController.navigate("licenses") },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (currentLang == "kn") "ಪರವಾನಗಿಗಳು" else "Licenses")
+                }
+                OutlinedButton(
+                    onClick = { navController.navigate("privacy_policy") },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (currentLang == "kn") "ಗೌಪ್ಯತೆ" else "Privacy")
+                }
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 

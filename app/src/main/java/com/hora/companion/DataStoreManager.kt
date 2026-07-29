@@ -24,6 +24,7 @@ class DataStoreManager(private val context: Context) {
         val KEY_DASHA_LEVEL = androidx.datastore.preferences.core.intPreferencesKey("key_dasha_level")
         val KEY_SAVE_PATH = stringPreferencesKey("key_save_path")
         val KEY_CHART_STYLE = stringPreferencesKey("key_chart_style") // "north", "south", "east"
+        val KEY_PRIVACY_ACCEPTED = androidx.datastore.preferences.core.booleanPreferencesKey("key_privacy_accepted")
     }
 
     val locationFlow: Flow<Pair<Double, Double>?> = context.dataStore.data.map { prefs ->
@@ -72,6 +73,10 @@ class DataStoreManager(private val context: Context) {
 
     val chartStyleFlow: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_CHART_STYLE] ?: "south"
+    }
+
+    val privacyAcceptedFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_PRIVACY_ACCEPTED] ?: false
     }
 
     suspend fun saveLocation(lat: Double, lon: Double, name: String? = null, mode: String? = null) {
@@ -138,6 +143,12 @@ class DataStoreManager(private val context: Context) {
     suspend fun saveChartStyle(style: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_CHART_STYLE] = style
+        }
+    }
+
+    suspend fun savePrivacyAccepted(accepted: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PRIVACY_ACCEPTED] = accepted
         }
     }
 }

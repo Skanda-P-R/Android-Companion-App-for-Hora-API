@@ -1,4 +1,4 @@
-# Hora Companion Android (Beta v0.6.1)
+# Hora Companion Android (Beta v0.6.2)
 
 A native Android application providing real-time astrological (Panchanga) and Hora data by consuming a dedicated Flask REST API. Designed with high-density Home Screen widgets and full Kannada language support.
 
@@ -51,9 +51,18 @@ Introduced in v0.6.0, the app implements a robust identity and authorization lay
 For more detailed information, please refer to the following documents:
 
 - [**Security & Authorization**](docs/SECURITY.md): Details on the Google Sign-In integration and backend whitelisting architecture.
+- [**Legal Notices**](docs/LEGAL_NOTICES.md): Acknowledgments for Swiss Ephemeris and licensing details.
 - [**Architecture Overview**](docs/ARCHITECTURE.md): Technical details on the app's structure and design patterns.
 - [**Widget Guide**](docs/WIDGETS.md): Instructions on adding and configuring Home Screen widgets.
 - [**Original Specification**](docs/SPECIFICATION.md): The initial project requirements and goals.
+
+## Licensing
+
+This project is licensed under the **GNU Affero General Public License v3 (AGPL-3.0)**. See the [LICENSE](LICENSE) file for the full license text.
+
+This application consumes the [Hora and Panchanga REST API](https://github.com/Skanda-P-R/Hora-and-Panchanga-REST-API), which utilizes the **Swiss Ephemeris** for high-precision astronomical calculations. In compliance with the Swiss Ephemeris public license, this project is also released under the AGPL.
+
+*Swiss Ephemeris is copyright © Astrodienst AG, Switzerland.*
 
 ---
 *Built for the Hora API ecosystem.*

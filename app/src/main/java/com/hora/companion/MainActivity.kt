@@ -11,11 +11,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -124,6 +128,9 @@ fun AppNavigation(activity: MainActivity) {
     val langState by dataStoreManager.langFlow.collectAsState(initial = "en")
     val chartStyleState by dataStoreManager.chartStyleFlow.collectAsState(initial = "south")
     val sessionToken by authRepository.sessionToken.collectAsState(initial = null)
+    val privacyAccepted by dataStoreManager.privacyAcceptedFlow.collectAsState(initial = false)
+
+    var showPrivacyDialog by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -131,19 +138,29 @@ fun AppNavigation(activity: MainActivity) {
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
+            activity.lifecycleScope.launch {
+                dataStoreManager.savePrivacyAccepted(true)
+            }
             activity.fetchLocation(dataStoreManager)
+            if (navController.currentDestination?.route == "location_required" || navController.currentDestination?.route == "login") {
+                navController.navigate("home") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        } else {
+            navController.navigate("location_required")
         }
     }
 
-    LaunchedEffect(locationMode) {
-        if (locationMode == "gps") {
+    LaunchedEffect(locationMode, sessionToken, privacyAccepted) {
+        if (locationMode == "gps" && !sessionToken.isNullOrEmpty() && privacyAccepted) {
             val hasFine = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
             val hasCoarse = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
             
-            if (!hasFine && !hasCoarse) {
-                launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-            } else {
+            if (hasFine || hasCoarse) {
                 activity.fetchLocation(dataStoreManager)
+            } else {
+                launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
             }
         }
     }
@@ -156,8 +173,37 @@ fun AppNavigation(activity: MainActivity) {
         }
     }
 
-    // Determine start destination
-    val startDest = if (sessionToken.isNullOrEmpty()) "login" else "home"
+    val startDest = if (sessionToken.isNullOrEmpty()) "login" else {
+        if (!privacyAccepted) "location_required" else "home"
+    }
+
+    if (showPrivacyDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { },
+            title = { Text(if (langState == "kn") "ಗೌಪ್ಯತೆ ಮತ್ತು ಸ್ಥಳ" else "Privacy & Location") },
+            text = { 
+                Text(if (langState == "kn") 
+                    "ನಿಖರವಾದ ಜ್ಯೋತಿಷ್ಯ ಡೇಟಾವನ್ನು ಒದಗಿಸಲು ಈ ಅಪ್ಲಿಕೇಶನ್‌ಗೆ ನಿಮ್ಮ ಸ್ಥಳದ ಅಗತ್ಯವಿದೆ. ನಿಮ್ಮ ಸ್ಥಳವು ನಿಮ್ಮ ಸಾಧನದಲ್ಲಿಯೇ ಇರುತ್ತದೆ ಮತ್ತು ಎಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳಲಾಗುವುದಿಲ್ಲ." 
+                    else "This app requires your location to provide accurate astrological data. Your location stays on your device and is never shared.") 
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPrivacyDialog = false
+                    launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+                }) {
+                    Text(if (langState == "kn") "ಒಪ್ಪಿಕೊಳ್ಳಿ" else "Accept")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPrivacyDialog = false
+                    navController.navigate("location_required")
+                }) {
+                    Text(if (langState == "kn") "ತಿರಸ್ಕರಿಸಿ" else "Deny")
+                }
+            }
+        )
+    }
 
     NavHost(navController = navController, startDestination = startDest) {
         composable("login") {
@@ -165,8 +211,12 @@ fun AppNavigation(activity: MainActivity) {
                 viewModel = loginViewModel,
                 uuidProvider = uuidProvider,
                 onLoginSuccess = {
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
+                    if (!privacyAccepted) {
+                        showPrivacyDialog = true
+                    } else {
+                        navController.navigate("home") {
+                            popUpTo("login") { inclusive = true }
+                        }
                     }
                 }
             )
@@ -261,6 +311,24 @@ fun AppNavigation(activity: MainActivity) {
                 dataStoreManager = dataStoreManager,
                 authRepository = authRepository,
                 repo = horaRepository
+            )
+        }
+        composable("licenses") {
+            LicensesScreen(navController = navController, lang = langState)
+        }
+        composable("privacy_policy") {
+            PrivacyPolicyScreen(navController = navController, lang = langState)
+        }
+        composable("location_required") {
+            LocationPermissionScreen(
+                navController = navController,
+                dataStoreManager = dataStoreManager,
+                lang = langState,
+                onPermissionGranted = {
+                    navController.navigate("home") {
+                        popUpTo("location_required") { inclusive = true }
+                    }
+                }
             )
         }
     }
