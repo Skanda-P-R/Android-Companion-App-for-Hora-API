@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
@@ -34,7 +33,6 @@ fun LocationsScreen(
     var locations by remember { mutableStateOf<List<LocationData>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
-    var showAddDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var selectedLocations by remember { mutableStateOf(setOf<String>()) }
@@ -94,11 +92,7 @@ fun LocationsScreen(
                     }
                 },
                 actions = {
-                    if (selectedLocations.isEmpty()) {
-                        IconButton(onClick = { showAddDialog = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Location")
-                        }
-                    } else {
+                    if (selectedLocations.isNotEmpty()) {
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete")
                         }
@@ -178,25 +172,6 @@ fun LocationsScreen(
         }
     }
 
-    if (showAddDialog) {
-        AddLocationDialog(
-            lang = lang,
-            onDismiss = { showAddDialog = false },
-            onConfirm = { newLoc ->
-                scope.launch {
-                    val res = repo.addLocation(newLoc)
-                    if (res.isSuccess) {
-                        fetchLocations()
-                        showAddDialog = false
-                    } else {
-                        errorMessage = res.exceptionOrNull()?.message ?: "Failed to add location"
-                        showAddDialog = false
-                    }
-                }
-            }
-        )
-    }
-
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
@@ -257,52 +232,4 @@ fun LocationItem(
         colors = if (isSelected) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer) else ListItemDefaults.colors()
     )
     HorizontalDivider(thickness = 0.5.dp)
-}
-
-@Composable
-fun AddLocationDialog(
-    lang: String,
-    onDismiss: () -> Unit,
-    onConfirm: (Map<String, Any?>) -> Unit
-) {
-    var name by remember { mutableStateOf("") }
-    var lat by remember { mutableStateOf("") }
-    var lon by remember { mutableStateOf("") }
-    var tz by remember { mutableStateOf("") }
-    var desc by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(TranslationUtils.translate("Add Location", lang)) },
-        text = {
-            Column {
-                TextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-                TextField(value = lat, onValueChange = { lat = it }, label = { Text("Latitude") })
-                TextField(value = lon, onValueChange = { lon = it }, label = { Text("Longitude") })
-                TextField(value = tz, onValueChange = { tz = it }, label = { Text("Timezone (Optional)") })
-                TextField(value = desc, onValueChange = { desc = it }, label = { Text("Description (Optional)") })
-            }
-        },
-        confirmButton = {
-            Button(onClick = {
-                val latitude = lat.trim().toDoubleOrNull()
-                val longitude = lon.trim().toDoubleOrNull()
-                if (name.trim().isNotEmpty() && latitude != null && longitude != null) {
-                    val map = mutableMapOf<String, Any?>(
-                        "name" to name.trim(),
-                        "latitude" to latitude,
-                        "longitude" to longitude
-                    )
-                    if (tz.trim().isNotEmpty()) map["timezone"] = tz.trim()
-                    if (desc.trim().isNotEmpty()) map["description"] = desc.trim()
-                    onConfirm(map)
-                }
-            }) {
-                Text(TranslationUtils.translate("Submit", lang))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
 }

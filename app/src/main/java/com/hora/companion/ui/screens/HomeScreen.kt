@@ -25,7 +25,7 @@ import java.time.ZonedDateTime
 fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel,
-    location: Pair<Double, Double>,
+    location: Pair<Double, Double>?,
     locationName: String?,
     locationMode: String,
     lang: String = "en"
@@ -35,6 +35,7 @@ fun HomeScreen(
     
     // Quantize location to avoid jitter triggering refreshes
     val quantizedLocation = remember(location) {
+        if (location == null) return@remember null
         val lat = (location.first * 1000).toInt() / 1000.0
         val lon = (location.second * 1000).toInt() / 1000.0
         lat to lon
@@ -55,9 +56,9 @@ fun HomeScreen(
                     } else {
                         remainingDisplay = "0 min"
                         if (NetworkUtils.isOnline(context)) {
-                            if (locationMode == "gps") {
+                            if (locationMode == "gps" && quantizedLocation != null) {
                                 viewModel.refreshHoraOnly(context, quantizedLocation.first, quantizedLocation.second, null)
-                            } else {
+                            } else if (locationMode == "manual") {
                                 viewModel.refreshHoraOnly(context, null, null, locationName)
                             }
                         }
@@ -88,9 +89,9 @@ fun HomeScreen(
                 ),
                 actions = {
                     IconButton(onClick = { 
-                        if (locationMode == "gps") {
-                            viewModel.refresh(context, location.first, location.second, null, force = true)
-                        } else {
+                        if (locationMode == "gps" && quantizedLocation != null) {
+                            viewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null, force = true)
+                        } else if (locationMode == "manual") {
                             viewModel.refresh(context, null, null, locationName, force = true)
                         }
                     }) {
@@ -206,24 +207,13 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(quantizedLocation, locationName, locationMode) {
-        // Only trigger refresh if we don't have data yet or if something changed.
-        // The repository will handle the actual smart caching.
-        if (state.tithi == "--") {
-            if (locationMode == "gps") {
-                viewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null)
-            } else {
-                viewModel.refresh(context, null, null, locationName)
+    LaunchedEffect(quantizedLocation, locationName, locationMode, lang) {
+        if (locationMode == "gps") {
+            if (quantizedLocation != null) {
+                viewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null, force = false)
             }
         } else {
-            // Periodic check for hora/kundali refresh is handled by the repository logic
-            // but we call refresh once to let the repo decide if it needs to fetch anything.
-            // We use force = false here.
-            if (locationMode == "gps") {
-                viewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null, force = false)
-            } else {
-                viewModel.refresh(context, null, null, locationName, force = false)
-            }
+            viewModel.refresh(context, null, null, locationName, force = false)
         }
     }
 }

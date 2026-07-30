@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.hora.companion.repository.HoraRepository
 import com.hora.companion.utils.WidgetUtils
 import com.hora.companion.DataStoreManager
+import com.hora.companion.utils.LocationUtils
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -18,54 +20,102 @@ class HomeViewModel(private val repo: HoraRepository) : ViewModel() {
     private val _state = MutableStateFlow(PanchangaState(isLoading = true))
     val state: StateFlow<PanchangaState> = _state
 
+    private var refreshJob: Job? = null
+    private var horaJob: Job? = null
+
+    private var lastLat: Double? = null
+    private var lastLon: Double? = null
+    private var lastLocName: String? = null
+    private var lastLang: String? = null
+    private var lastDate: String? = null
+
     fun refresh(context: Context, lat: Double?, lon: Double?, locationName: String? = null, force: Boolean = false) {
         viewModelScope.launch {
-            if (force || _state.value.tithi == "--") {
-                _state.value = _state.value.copy(isLoading = true)
+            val dataStore = DataStoreManager(context)
+            val lang = dataStore.langFlow.first()
+            val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+            
+            // Detect if this is a refresh triggered by a settings change (location or language)
+            val hasPreviousState = lastLat != null || lastLocName != null || lastLang != null
+            val isLocationChanged = if (locationName != null || lastLocName != null) {
+                locationName != lastLocName
+            } else {
+                LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon)
             }
-            try {
-                val dataStore = DataStoreManager(context)
-                val lang = dataStore.langFlow.first()
-                val chartStyle = dataStore.chartStyleFlow.first()
+            val isLangChanged = lang != lastLang
+            
+            // If location or language changed significantly, we MUST force a refresh to bypass cache
+            val effectiveForce = force || (hasPreviousState && (isLocationChanged || isLangChanged))
 
-                coroutineScope {
-                    val panDeferred = async { repo.fetchPanchanga(lat, lon, locationName, lang = lang, force = force) }
-                    val muhDeferred = async { repo.fetchMuhurta(lat, lon, locationName, lang = lang, force = force) }
-                    val dayDeferred = async { repo.fetchDay(lat, lon, locationName, lang = lang, force = force) }
-                    val horaDeferred = async { repo.fetchHora(lat, lon, locationName, lang = lang, force = force) }
-                    val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang, chartStyle = chartStyle) }
+            if (!effectiveForce) {
+                val isSameLocation = lat == lastLat && lon == lastLon && locationName == lastLocName
+                val isMinorLocChange = !LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon) && locationName == lastLocName
+                val isSameSettings = lang == lastLang && todayDate == lastDate
 
-                    val panRes = panDeferred.await()
-                    val muhRes = muhDeferred.await()
-                    val dayRes = dayDeferred.await()
-                    val horaRes = horaDeferred.await()
-                    kundaliDeferred.await()
-
-                    val merged = repo.mergeToState(
-                        panchangaJson = panRes.getOrNull(),
-                        muhurtaJson = muhRes.getOrNull(),
-                        dayJson = dayRes.getOrNull(),
-                        horaJson = horaRes.getOrNull()
-                    )
-
-                    _state.value = merged.copy(
-                        isLoading = false,
-                        error = if (panRes.isFailure) panRes.exceptionOrNull()?.message else null
-                    )
-                    
-                    if (panRes.isSuccess || horaRes.isSuccess) {
-                        WidgetUtils.updateAllWidgets(context.applicationContext)
+                if ((isSameLocation || isMinorLocChange) && isSameSettings && _state.value.tithi != "--") {
+                    lastLat = lat
+                    lastLon = lon
+                    if (_state.value.isLoading) {
+                        _state.value = _state.value.copy(isLoading = false)
                     }
+                    return@launch
                 }
-            } catch (e: Exception) {
-                Log.e("HomeViewModel", "Error refreshing", e)
-                _state.value = _state.value.copy(isLoading = false, error = e.message)
+            }
+
+            refreshJob?.cancel()
+            refreshJob = launch {
+                lastLat = lat
+                lastLon = lon
+                lastLocName = locationName
+                lastLang = lang
+                lastDate = todayDate
+
+                if (effectiveForce || _state.value.tithi == "--") {
+                    _state.value = _state.value.copy(isLoading = true)
+                }
+                try {
+                    val chartStyle = dataStore.chartStyleFlow.first()
+
+                    coroutineScope {
+                        val panDeferred = async { repo.fetchPanchanga(lat, lon, locationName, lang = lang, force = effectiveForce) }
+                        val muhDeferred = async { repo.fetchMuhurta(lat, lon, locationName, lang = lang, force = effectiveForce) }
+                        val dayDeferred = async { repo.fetchDay(lat, lon, locationName, lang = lang, force = effectiveForce) }
+                        val horaDeferred = async { repo.fetchHora(lat, lon, locationName, lang = lang, force = effectiveForce) }
+                        val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang, chartStyle = chartStyle, force = effectiveForce) }
+
+                        val panRes = panDeferred.await()
+                        val muhRes = muhDeferred.await()
+                        val dayRes = dayDeferred.await()
+                        val horaRes = horaDeferred.await()
+                        kundaliDeferred.await()
+
+                        val merged = repo.mergeToState(
+                            panchangaJson = panRes.getOrNull(),
+                            muhurtaJson = muhRes.getOrNull(),
+                            dayJson = dayRes.getOrNull(),
+                            horaJson = horaRes.getOrNull()
+                        )
+
+                        _state.value = merged.copy(
+                            isLoading = false,
+                            error = if (panRes.isFailure) panRes.exceptionOrNull()?.message else null
+                        )
+                        
+                        if (panRes.isSuccess || horaRes.isSuccess) {
+                            WidgetUtils.updateAllWidgets(context.applicationContext)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("HomeViewModel", "Error refreshing", e)
+                    _state.value = _state.value.copy(isLoading = false, error = e.message)
+                }
             }
         }
     }
 
     fun refreshHoraOnly(context: Context, lat: Double?, lon: Double?, locationName: String? = null) {
-        viewModelScope.launch {
+        horaJob?.cancel()
+        horaJob = viewModelScope.launch {
             val dataStore = DataStoreManager(context)
             val lang = dataStore.langFlow.first()
             val res = repo.fetchHora(lat, lon, locationName, lang = lang, force = false)
@@ -76,7 +126,6 @@ class HomeViewModel(private val repo: HoraRepository) : ViewModel() {
                     dayJson = null,
                     horaJson = res.getOrNull()
                 )
-                // Merge with current state fields that are NOT hora-related
                 _state.value = _state.value.copy(
                     hora = newState.hora,
                     horaSymbol = newState.horaSymbol,

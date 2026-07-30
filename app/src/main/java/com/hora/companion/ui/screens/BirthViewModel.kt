@@ -16,8 +16,10 @@ import com.hora.companion.models.DashaResponse
 import com.hora.companion.models.DashaPeriod
 import com.hora.companion.models.LocationData
 import com.hora.companion.utils.EncryptionUtils
+import com.hora.companion.utils.LocationUtils
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -74,6 +76,15 @@ class BirthViewModel(
     private val _selectedL2 = MutableStateFlow<DashaPeriod?>(null)
     val selectedL2: StateFlow<DashaPeriod?> = _selectedL2
 
+    private var fetchJob: Job? = null
+
+    private var lastLat: Double? = null
+    private var lastLon: Double? = null
+    private var lastLocName: String? = null
+    private var lastDate: String? = null
+    private var lastTime: String? = null
+    private var lastPersonName: String? = null
+
     fun fetchData(
         lat: Double?,
         lon: Double?,
@@ -87,7 +98,26 @@ class BirthViewModel(
         chartStyle: String,
         sessionToken: String?
     ) {
-        viewModelScope.launch {
+        // Skip if everything is identical
+        if (lat == lastLat && lon == lastLon && location == lastLocName && date == lastDate && time == lastTime && name == lastPersonName) return
+
+        // Skip if only minor coordinate drift
+        if (!LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon) && 
+            location == lastLocName && date == lastDate && time == lastTime && name == lastPersonName) {
+            lastLat = lat
+            lastLon = lon
+            return
+        }
+
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
+            lastLat = lat
+            lastLon = lon
+            lastLocName = location
+            lastDate = date
+            lastTime = time
+            lastPersonName = name
+
             _state.value = _state.value.copy(
                 isLoading = true, 
                 error = null,
@@ -111,7 +141,9 @@ class BirthViewModel(
                     if (location != null) {
                         append("location=${URLEncoder.encode(location, "UTF-8")}")
                     } else if (lat != null && lon != null) {
-                        append("lat=$lat&lon=$lon")
+                        val fLat = LocationUtils.formatCoord(lat)
+                        val fLon = LocationUtils.formatCoord(lon)
+                        append("lat=$fLat&lon=$fLon")
                     } else {
                         append("lat=12.9716&lon=77.5946")
                     }

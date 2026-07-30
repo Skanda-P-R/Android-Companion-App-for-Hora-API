@@ -6,6 +6,7 @@ import com.hora.companion.api.HoraApiService
 import com.hora.companion.CacheManager
 import com.hora.companion.ui.screens.PanchangaState
 import com.hora.companion.utils.NetworkUtils
+import com.hora.companion.utils.LocationUtils
 import com.hora.companion.models.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -84,6 +85,26 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         }
     }
 
+    private fun getCachedVedicDayDate(): String? {
+        val cached = cache.readJson("day.json") ?: return null
+        return try {
+            JSONObject(cached).optString("vedic_day_date", "")
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun isCacheValidForDay(json: String?, currentVedicDayDate: String?): Boolean {
+        if (json == null || currentVedicDayDate == null || currentVedicDayDate.isEmpty()) return false
+        return try {
+            val obj = JSONObject(json)
+            val cacheVedicDate = obj.optString("vedic_day_date", "")
+            cacheVedicDate.isNotEmpty() && cacheVedicDate == currentVedicDayDate
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private fun isFresh(cacheName: String, minutes: Int): Boolean {
         val lastMod = cache.lastModified(cacheName)
         if (lastMod == 0L) return false
@@ -106,13 +127,20 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
 
         if (!force && isCurrentVedicDay) {
             val cached = cache.readJson(cacheName)
-            if (cached != null) return@withContext Result.success(cached)
+            val currentDayDate = getCachedVedicDayDate()
+            if (isCacheValidForDay(cached, currentDayDate)) {
+                return@withContext Result.success(cached!!)
+            }
         }
 
         if (online) {
             return@withContext try {
                 val apiLang = if (lang == "kn") "kan" else "en"
-                val json = api.getPanchanga(lat, lon, location, date, apiLang).string()
+                val json = api.getPanchanga(
+                    LocationUtils.formatCoord(lat), 
+                    LocationUtils.formatCoord(lon), 
+                    location, date, apiLang
+                ).string()
                 if (today) cache.saveJson(cacheName, json)
                 Result.success(json)
             } catch (e: Exception) {
@@ -141,13 +169,20 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
 
         if (!force && isCurrentVedicDay) {
             val cached = cache.readJson(cacheName)
-            if (cached != null) return@withContext Result.success(cached)
+            val currentDayDate = getCachedVedicDayDate()
+            if (isCacheValidForDay(cached, currentDayDate)) {
+                return@withContext Result.success(cached!!)
+            }
         }
 
         if (online) {
             return@withContext try {
                 val apiLang = if (lang == "kn") "kan" else "en"
-                val json = api.getMuhurta(lat, lon, location, date, apiLang).string()
+                val json = api.getMuhurta(
+                    LocationUtils.formatCoord(lat), 
+                    LocationUtils.formatCoord(lon), 
+                    location, date, apiLang
+                ).string()
                 if (today) cache.saveJson(cacheName, json)
                 Result.success(json)
             } catch (e: Exception) {
@@ -182,7 +217,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         if (online) {
             return@withContext try {
                 val apiLang = if (lang == "kn") "kan" else "en"
-                val json = api.getDay(lat, lon, location, date, apiLang).string()
+                val json = api.getDay(
+                    LocationUtils.formatCoord(lat), 
+                    LocationUtils.formatCoord(lon), 
+                    location, date, apiLang
+                ).string()
                 if (today) cache.saveJson(cacheName, json)
                 Result.success(json)
             } catch (e: Exception) {
@@ -213,13 +252,20 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
 
         if (!force && isCurrentVedicDay) {
             val cached = cache.readJson(cacheName)
-            if (cached != null) return@withContext Result.success(cached)
+            val currentDayDate = getCachedVedicDayDate()
+            if (isCacheValidForDay(cached, currentDayDate)) {
+                return@withContext Result.success(cached!!)
+            }
         }
 
         if (online) {
             return@withContext try {
                 val apiLang = if (lang == "kn") "kan" else "en"
-                val json = api.getHora(lat, lon, location, date, time, apiLang).string()
+                val json = api.getHora(
+                    LocationUtils.formatCoord(lat), 
+                    LocationUtils.formatCoord(lon), 
+                    location, date, time, apiLang
+                ).string()
                 if (isNow) cache.saveJson(cacheName, json)
                 Result.success(json)
             } catch (e: Exception) {
@@ -243,7 +289,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val respBody = api.getAllRaw(lat, lon, location, date, time, apiLang)
+            val respBody = api.getAllRaw(
+                LocationUtils.formatCoord(lat), 
+                LocationUtils.formatCoord(lon), 
+                location, date, time, apiLang
+            )
             val json = respBody.string()
             if (date == null && time == null) {
                 cache.saveJson("all.json", json)
@@ -269,7 +319,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val respBody = api.getPanchanga(lat, lon, location, date, apiLang)
+            val respBody = api.getPanchanga(
+                LocationUtils.formatCoord(lat), 
+                LocationUtils.formatCoord(lon), 
+                location, date, apiLang
+            )
             Result.success(respBody.string())
         } catch (e: Exception) {
             Result.failure(e)
@@ -286,7 +340,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val respBody = api.getHora(lat, lon, location, date, time, apiLang)
+            val respBody = api.getHora(
+                LocationUtils.formatCoord(lat), 
+                LocationUtils.formatCoord(lon), 
+                location, date, time, apiLang
+            )
             Result.success(respBody.string())
         } catch (e: Exception) {
             Result.failure(e)
@@ -302,7 +360,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val respBody = api.getMuhurta(lat, lon, location, date, apiLang)
+            val respBody = api.getMuhurta(
+                LocationUtils.formatCoord(lat), 
+                LocationUtils.formatCoord(lon), 
+                location, date, apiLang
+            )
             Result.success(respBody.string())
         } catch (e: Exception) {
             Result.failure(e)
@@ -337,7 +399,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         if (online) {
             return@withContext try {
                 val apiLang = if (lang == "kn") "kan" else "en"
-                val resp = api.getKundaliChartRaw(lat, lon, location, date, time, apiLang, chartStyle)
+                val resp = api.getKundaliChartRaw(
+                    LocationUtils.formatCoord(lat), 
+                    LocationUtils.formatCoord(lon), 
+                    location, date, time, apiLang, chartStyle
+                )
                 val bytes = resp.bytes()
                 
                 val firstChars = bytes.take(10).map { it.toInt().toChar() }.joinToString("")
@@ -374,7 +440,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<ByteArray> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val resp = api.getBirthChartRaw(lat, lon, location, date, time, name, apiLang, chartStyle)
+            val resp = api.getBirthChartRaw(
+                LocationUtils.formatCoord(lat), 
+                LocationUtils.formatCoord(lon), 
+                location, date, time, name, apiLang, chartStyle
+            )
             Result.success(resp.bytes())
         } catch (e: Exception) {
             Result.failure(e)
@@ -392,7 +462,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<DashaResponse> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val resp = api.getDasha(lat, lon, location, date, time, apiLang, depth)
+            val resp = api.getDasha(
+                LocationUtils.formatCoord(lat), 
+                LocationUtils.formatCoord(lon), 
+                location, date, time, apiLang, depth
+            )
             Result.success(resp)
         } catch (e: Exception) {
             Log.e("HoraRepository", "Error fetching dasha", e)
@@ -411,7 +485,11 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
     ): Result<DashaResponse> = withContext(Dispatchers.IO) {
         return@withContext try {
             val apiLang = if (lang == "kn") "kan" else "en"
-            val resp = api.getBirthDasha(lat, lon, location, date, time, apiLang, depth)
+            val resp = api.getBirthDasha(
+                LocationUtils.formatCoord(lat), 
+                LocationUtils.formatCoord(lon), 
+                location, date, time, apiLang, depth
+            )
             Result.success(resp)
         } catch (e: Exception) {
             Log.e("HoraRepository", "Error fetching birth dasha", e)

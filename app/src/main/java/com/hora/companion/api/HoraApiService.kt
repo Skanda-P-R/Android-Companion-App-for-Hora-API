@@ -17,8 +17,8 @@ import java.util.concurrent.TimeUnit
 interface HoraApiService {
     @GET("api/v1/all")
     suspend fun getAllRaw(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
@@ -27,8 +27,8 @@ interface HoraApiService {
 
     @GET("api/v1/panchanga")
     suspend fun getPanchanga(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("lang") lang: String = "en"
@@ -36,8 +36,8 @@ interface HoraApiService {
 
     @GET("api/v1/hora")
     suspend fun getHora(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
@@ -46,8 +46,8 @@ interface HoraApiService {
 
     @GET("api/v1/muhurta")
     suspend fun getMuhurta(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("lang") lang: String = "en"
@@ -55,8 +55,8 @@ interface HoraApiService {
 
     @GET("api/v1/day")
     suspend fun getDay(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("lang") lang: String = "en"
@@ -64,8 +64,8 @@ interface HoraApiService {
 
     @GET("api/v1/kundali")
     suspend fun getKundali(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
@@ -74,8 +74,8 @@ interface HoraApiService {
 
     @GET("api/v1/kundali/svg")
     suspend fun getKundaliChartRaw(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
@@ -85,8 +85,8 @@ interface HoraApiService {
 
     @GET("api/v1/kundali/birth/svg")
     suspend fun getBirthChartRaw(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
@@ -97,8 +97,8 @@ interface HoraApiService {
 
     @GET("api/v1/dasha")
     suspend fun getDasha(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,
@@ -108,8 +108,8 @@ interface HoraApiService {
 
     @GET("api/v1/dasha/birth")
     suspend fun getBirthDasha(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
         @Query("location") location: String? = null,
         @Query("date") date: String? = null,
         @Query("time") time: String? = null,

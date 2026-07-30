@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.hora.companion.repository.HoraRepository
 import com.hora.companion.models.DashaResponse
 import com.hora.companion.models.DashaPeriod
+import com.hora.companion.utils.LocationUtils
 import android.content.Context
 import coil.imageLoader
 import coil.request.ImageRequest
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -39,6 +41,14 @@ class TransitViewModel(
     private val _selectedL2 = MutableStateFlow<DashaPeriod?>(null)
     val selectedL2: StateFlow<DashaPeriod?> = _selectedL2
 
+    private var fetchJob: Job? = null
+    
+    private var lastLat: Double? = null
+    private var lastLon: Double? = null
+    private var lastLocName: String? = null
+    private var lastDate: String? = null
+    private var lastTime: String? = null
+
     fun fetchData(
         lat: Double?,
         lon: Double?,
@@ -51,7 +61,25 @@ class TransitViewModel(
         chartStyle: String,
         sessionToken: String?
     ) {
-        viewModelScope.launch {
+        // Skip if everything is identical
+        if (lat == lastLat && lon == lastLon && location == lastLocName && date == lastDate && time == lastTime) return
+
+        // Skip if only minor coordinate drift
+        if (!LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon) && 
+            location == lastLocName && date == lastDate && time == lastTime) {
+            lastLat = lat
+            lastLon = lon
+            return
+        }
+
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
+            lastLat = lat
+            lastLon = lon
+            lastLocName = location
+            lastDate = date
+            lastTime = time
+
             _state.value = _state.value.copy(isLoading = true, error = null)
             _chartLoaded.value = false
             _selectedL1.value = null
@@ -66,7 +94,9 @@ class TransitViewModel(
                     if (location != null) {
                         append("location=${java.net.URLEncoder.encode(location, "UTF-8")}")
                     } else if (lat != null && lon != null) {
-                        append("lat=$lat&lon=$lon")
+                        val fLat = LocationUtils.formatCoord(lat)
+                        val fLon = LocationUtils.formatCoord(lon)
+                        append("lat=$fLat&lon=$fLon")
                     } else {
                         append("lat=12.9716&lon=77.5946")
                     }

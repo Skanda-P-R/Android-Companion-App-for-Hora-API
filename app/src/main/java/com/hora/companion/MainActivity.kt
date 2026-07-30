@@ -225,7 +225,7 @@ fun AppNavigation(activity: MainActivity) {
             HomeScreen(
                 navController = navController,
                 viewModel = homeViewModel,
-                location = locationState ?: (12.9716 to 77.5946),
+                location = locationState,
                 locationName = locationName,
                 locationMode = locationMode,
                 lang = langState
