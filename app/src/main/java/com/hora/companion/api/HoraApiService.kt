@@ -62,39 +62,6 @@ interface HoraApiService {
         @Query("lang") lang: String = "en"
     ): ResponseBody
 
-    @GET("api/v1/kundali")
-    suspend fun getKundali(
-        @Query("lat") lat: String? = null,
-        @Query("lon") lon: String? = null,
-        @Query("location") location: String? = null,
-        @Query("date") date: String? = null,
-        @Query("time") time: String? = null,
-        @Query("lang") lang: String = "en"
-    ): Map<String, @JvmSuppressWildcards Any>
-
-    @GET("api/v1/kundali/svg")
-    suspend fun getKundaliChartRaw(
-        @Query("lat") lat: String? = null,
-        @Query("lon") lon: String? = null,
-        @Query("location") location: String? = null,
-        @Query("date") date: String? = null,
-        @Query("time") time: String? = null,
-        @Query("lang") lang: String = "en",
-        @Query("chart_style") chartStyle: String? = null
-    ): ResponseBody
-
-    @GET("api/v1/kundali/birth/svg")
-    suspend fun getBirthChartRaw(
-        @Query("lat") lat: String? = null,
-        @Query("lon") lon: String? = null,
-        @Query("location") location: String? = null,
-        @Query("date") date: String? = null,
-        @Query("time") time: String? = null,
-        @Query("name") name: String? = null,
-        @Query("lang") lang: String = "en",
-        @Query("chart_style") chartStyle: String? = null
-    ): ResponseBody
-
     @GET("api/v1/dasha")
     suspend fun getDasha(
         @Query("lat") lat: String? = null,

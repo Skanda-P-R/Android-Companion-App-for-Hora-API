@@ -105,13 +105,6 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         }
     }
 
-    private fun isFresh(cacheName: String, minutes: Int): Boolean {
-        val lastMod = cache.lastModified(cacheName)
-        if (lastMod == 0L) return false
-        val diff = System.currentTimeMillis() - lastMod
-        return diff < (minutes * 60 * 1000L)
-    }
-
     suspend fun fetchPanchanga(
         lat: Double? = null,
         lon: Double? = null,
@@ -366,86 +359,6 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
                 location, date, apiLang
             )
             Result.success(respBody.string())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun fetchKundaliImage(
-        lat: Double? = null,
-        lon: Double? = null,
-        location: String? = null,
-        date: String? = null,
-        time: String? = null,
-        lang: String,
-        chartStyle: String? = null,
-        force: Boolean = false
-    ): Result<ByteArray> = withContext(Dispatchers.IO) {
-        val cacheName = "kundali.png"
-        val online = NetworkUtils.isOnline(context)
-        val isCurrentMoment = isNow(date, time)
-
-        if (!force && isCurrentMoment) {
-            val cached = cache.readBytes(cacheName)
-            if (cached != null) {
-                if (online) {
-                    if (isFresh(cacheName, 15)) return@withContext Result.success(cached)
-                } else {
-                    return@withContext Result.success(cached)
-                }
-            }
-        }
-
-        if (online) {
-            return@withContext try {
-                val apiLang = if (lang == "kn") "kan" else "en"
-                val resp = api.getKundaliChartRaw(
-                    LocationUtils.formatCoord(lat), 
-                    LocationUtils.formatCoord(lon), 
-                    location, date, time, apiLang, chartStyle
-                )
-                val bytes = resp.bytes()
-                
-                val firstChars = bytes.take(10).map { it.toInt().toChar() }.joinToString("")
-                if (firstChars.contains("{") || firstChars.contains("error")) {
-                    Log.e("HoraRepository", "Received non-image data for kundali: ${String(bytes)}")
-                    return@withContext Result.failure(Exception("Server returned error instead of image"))
-                }
-
-                if (isCurrentMoment) {
-                    cache.saveBytes("kundali.png", bytes)
-                }
-                Result.success(bytes)
-            } catch (e: Exception) {
-                Log.e("HoraRepository", "Error fetching kundali image", e)
-                val cached = cache.readBytes("kundali.png")
-                if (isCurrentMoment && cached != null) Result.success(cached) else Result.failure(e)
-            }
-        } else {
-            val cached = cache.readBytes("kundali.png")
-            return@withContext if (isCurrentMoment && cached != null) Result.success(cached) 
-            else Result.failure(Exception("Offline and no cache"))
-        }
-    }
-
-    suspend fun fetchBirthChartImage(
-        lat: Double? = null,
-        lon: Double? = null,
-        location: String? = null,
-        date: String? = null,
-        time: String? = null,
-        name: String? = null,
-        lang: String,
-        chartStyle: String? = null
-    ): Result<ByteArray> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val apiLang = if (lang == "kn") "kan" else "en"
-            val resp = api.getBirthChartRaw(
-                LocationUtils.formatCoord(lat), 
-                LocationUtils.formatCoord(lon), 
-                location, date, time, name, apiLang, chartStyle
-            )
-            Result.success(resp.bytes())
         } catch (e: Exception) {
             Result.failure(e)
         }

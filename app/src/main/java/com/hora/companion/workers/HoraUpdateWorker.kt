@@ -39,12 +39,9 @@ class HoraUpdateWorker(appContext: Context, params: WorkerParameters) : Coroutin
             repo.fetchDay(lat, lon, locationName, lang = lang, force = false)
             repo.fetchPanchanga(lat, lon, locationName, lang = lang, force = false)
             repo.fetchMuhurta(lat, lon, locationName, lang = lang, force = false)
-            repo.fetchHora(lat, lon, locationName, lang = lang, force = false)
+            val horaRes = repo.fetchHora(lat, lon, locationName, lang = lang, force = false)
             
-            // Force Kundali update to keep the chart fresh on the widget
-            val kundaliRes = repo.fetchKundaliImage(lat, lon, locationName, lang = lang, force = true)
-
-            return if (kundaliRes.isSuccess) {
+            return if (horaRes.isSuccess) {
                 WidgetUtils.updateAllWidgets(applicationContext)
                 Result.success()
             } else {

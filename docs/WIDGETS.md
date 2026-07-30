@@ -14,12 +14,9 @@ A sophisticated 3-column widget designed for maximum information density.
     - **Column 3**: Rahu Kalam, Yamaganda, and Abhijit Muhurta.
 - **Footer**: Zodiac signs (Rasi) for the Moon and Sun.
 
-### 2. Transit Kundali Chart (Small/Medium)
-A visual widget displaying the real-time Transit Kundali PNG for your selected location.
-
 ## Widget Selection Experience
 The app features a customized **Widget Picker**:
-- **Descriptive Labels**: "Hora & Panchanga" and "Transit Kundali".
+- **Descriptive Labels**: "Hora & Panchanga".
 - **Realistic Previews**: See actual screenshots of the widgets before adding them.
 - **Modern Design**: Previews feature curved corners to match the Android 12+ aesthetic.
 
@@ -42,5 +39,5 @@ All widget content (labels and data) automatically reflects the language choice 
 1. Long-press on your Android home screen.
 2. Select **Widgets**.
 3. Find **Hora Companion**.
-4. Drag either the **Hora** or **Kundali** widget to your screen.
+4. Drag the **Hora** widget to your screen.
 5. (Recommended) Resize the Hora widget to fill a 4-column width for the clearest alignment.

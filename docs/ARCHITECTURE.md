@@ -32,7 +32,7 @@ The app follows a standard Android Clean Architecture approach with a focus on s
 
 ### 1. Robust Data Layer
 The repository is designed to be "Offline-First" where possible.
-- **Caching**: Every successful JSON and PNG fetch is saved to internal storage.
+- **Caching**: Every successful JSON fetch is saved to internal storage.
 - **Vault System**: Personalized Birth Kundalis can be explicitly saved to the local file system. These files are encrypted at rest using `EncryptionUtils` to prevent unauthorized access by other document readers.
 - **Error Handling**: If a network fetch fails, the app returns the last cached version along with a timestamp and the error message to the UI.
 

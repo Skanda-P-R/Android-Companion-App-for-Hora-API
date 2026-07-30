@@ -74,20 +74,16 @@ class HomeViewModel(private val repo: HoraRepository) : ViewModel() {
                     _state.value = _state.value.copy(isLoading = true)
                 }
                 try {
-                    val chartStyle = dataStore.chartStyleFlow.first()
-
                     coroutineScope {
                         val panDeferred = async { repo.fetchPanchanga(lat, lon, locationName, lang = lang, force = effectiveForce) }
                         val muhDeferred = async { repo.fetchMuhurta(lat, lon, locationName, lang = lang, force = effectiveForce) }
                         val dayDeferred = async { repo.fetchDay(lat, lon, locationName, lang = lang, force = effectiveForce) }
                         val horaDeferred = async { repo.fetchHora(lat, lon, locationName, lang = lang, force = effectiveForce) }
-                        val kundaliDeferred = async { repo.fetchKundaliImage(lat, lon, locationName, lang = lang, chartStyle = chartStyle, force = effectiveForce) }
 
                         val panRes = panDeferred.await()
                         val muhRes = muhDeferred.await()
                         val dayRes = dayDeferred.await()
                         val horaRes = horaDeferred.await()
-                        kundaliDeferred.await()
 
                         val merged = repo.mergeToState(
                             panchangaJson = panRes.getOrNull(),
