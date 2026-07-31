@@ -1,4 +1,4 @@
-# Hora Companion Widgets
+# HoraJnana Widgets
 
 The app provides high-density widgets for the Android Home Screen, built with Jetpack Glance. These widgets provide critical astrological data at a glance, mirroring the depth of traditional Panchangas in a modern mobile format.
 
@@ -38,6 +38,6 @@ All widget content (labels and data) automatically reflects the language choice 
 ## How to Add
 1. Long-press on your Android home screen.
 2. Select **Widgets**.
-3. Find **Hora Companion**.
+3. Find **HoraJnana**.
 4. Drag the **Hora** widget to your screen.
 5. (Recommended) Resize the Hora widget to fill a 4-column width for the clearest alignment.

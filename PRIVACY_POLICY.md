@@ -1,13 +1,13 @@
-# Privacy Policy for Hora Companion
+# Privacy Policy for HoraJnana
 
-Last Updated: July 29, 2026
+Last Updated: July 31, 2026
 
-Hora Companion ("we", "us", or "our") values your privacy. This Privacy Policy explains how we handle your information when you use our mobile application.
+HoraJnana ("we", "us", or "our") values your privacy. This Privacy Policy explains how we handle your information when you use our mobile application.
 
 ## 1. Information Collection and Use
 
 ### Location Data
-Hora Companion requires access to your device's location (Fine and Coarse location) to provide accurate astrological (Panchanga) and Hora calculations based on your current coordinates.
+HoraJnana requires access to your device's location (Fine and Coarse location) to provide accurate astrological (Panchanga) and Hora calculations based on your current coordinates.
 
 **Crucially:**
 - **Local Processing:** Your current GPS coordinates are used exclusively within the application to determine the local Sunrise, Sunset, and other celestial events.
@@ -27,7 +27,7 @@ The app uses Google Sign-In (via Jetpack Credential Manager) for secure authenti
 
 ## 3. Third-Party Services
 
-Our app consumes the [Hora and Panchanga REST API](https://github.com/Skanda-P-R/Hora-and-Panchanga-REST-API). While the app sends your authentication token to the API to verify your identity, it does **not** send your current GPS coordinates to the API server.
+Our app consumes the [HoraJnana REST API](https://github.com/Skanda-P-R/Hora-and-Panchanga-REST-API). While the app sends your authentication token to the API to verify your identity, it does **not** send your current GPS coordinates to the API server.
 
 ## 4. Your Consent
 

@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Hora Companion</string>
+    <string name="app_name">HoraJnana</string>
     <string name="add_hora_widget">Add Hora Widget</string>
     <string name="refresh">Refresh</string>
     <string name="hora_widget_label">Hora &amp; Panchanga</string>
     <string name="hora_widget_description">Current Hora, Tithi, Nakshatra, and Muhurta at a glance.</string>
-    <string name="kundali_widget_label">Transit Kundali</string>
-    <string name="kundali_widget_description">Real-time transit chart for your location.</string>
 </resources>

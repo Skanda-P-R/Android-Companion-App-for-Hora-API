@@ -18,7 +18,7 @@ The backend API uses the `pyswisseph` Python wrapper for Swiss Ephemeris.
 
 ## Open Source Libraries
 
-The Hora Companion Android app is built using several high-quality open-source libraries:
+The HoraJnana Android app is built using several high-quality open-source libraries:
 
 - **Jetpack Compose / Glance / Material 3**: Copyright Google LLC. (Apache 2.0)
 - **Retrofit / OkHttp**: Copyright Square, Inc. (Apache 2.0)

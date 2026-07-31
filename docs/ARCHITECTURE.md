@@ -1,6 +1,6 @@
-# Architecture Overview - Hora Companion
+# Architecture Overview - HoraJnana
 
-This document describes the high-level design and package structure of the Hora Companion Android app.
+This document describes the high-level design and package structure of the HoraJnana Android app.
 
 ## Project Structure
 

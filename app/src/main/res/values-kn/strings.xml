@@ -5,6 +5,4 @@
     <string name="refresh">ನವೀಕರಿಸಿ</string>
     <string name="hora_widget_label">ಹೋರೆ ಮತ್ತು ಪಂಚಾಂಗ</string>
     <string name="hora_widget_description">ಪ್ರಸ್ತುತ ಹೋರೆ, ತಿಥಿ, ನಕ್ಷತ್ರ ಮತ್ತು ಮುಹೂರ್ತದ ಮಾಹಿತಿ.</string>
-    <string name="kundali_widget_label">ಗೋಚಾರ ಕುಂಡಲಿ</string>
-    <string name="kundali_widget_description">ನಿಮ್ಮ ಸ್ಥಳದ ನೈಜ ಸಮಯದ ಗೋಚಾರ ಕುಂಡಲಿ.</string>
 </resources>

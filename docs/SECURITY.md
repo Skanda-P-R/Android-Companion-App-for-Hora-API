@@ -1,6 +1,6 @@
 # Security & Authorization - Google Identity
 
-This document describes the security architecture implemented in the Hora Companion App as of v0.6.0. The app uses a modern verified identity model using Google Sign-In.
+This document describes the security architecture implemented in the HoraJnana App as of v0.6.0. The app uses a modern verified identity model using Google Sign-In.
 
 ---
 

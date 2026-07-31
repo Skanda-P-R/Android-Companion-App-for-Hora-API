@@ -12,11 +12,11 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.hora.companion"
+    namespace = "com.hora.jnana"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.hora.companion"
+        applicationId = "com.hora.jnana"
         minSdk = 23
         targetSdk = 34
         versionCode = 13
