@@ -23,7 +23,7 @@ android {
         versionName = "0.6.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"191782211549-ai1b8fbs3m4r2lc3ahhuhmjucg9n7di6.apps.googleusercontent.com\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"747373461741-ljjkujthicdvq3eeti6hcgt9j8eh939i.apps.googleusercontent.com\"")
         buildConfigField("String", "BASE_URL", "\"https://ndaskka.pythonanywhere.com/\"")
     }
 

@@ -37,11 +37,16 @@ fun SettingsScreen(
     navController: NavController, 
     dataStoreManager: DataStoreManager,
     authRepository: AuthRepository,
-    repo: com.hora.jnana.repository.HoraRepository
+    repo: com.hora.jnana.repository.HoraRepository,
+    homeViewModel: HomeViewModel,
+    location: Pair<Double, Double>?,
+    locationName: String?,
+    locationMode: String
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     var isLoggingOut by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
 
     val currentLang by dataStoreManager.langFlow.collectAsState(initial = "en")
     val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "blue")
@@ -343,6 +348,69 @@ fun SettingsScreen(
                 ) {
                     Text(if (currentLang == "kn") "ಗೌಪ್ಯತೆ" else "Privacy")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        val quantizedLocation = if (location == null) null else {
+                            val lat = (location.first * 1000).toInt() / 1000.0
+                            val lon = (location.second * 1000).toInt() / 1000.0
+                            lat to lon
+                        }
+                        if (locationMode == "gps" && quantizedLocation != null) {
+                            homeViewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null, force = true)
+                        } else if (locationMode == "manual") {
+                            homeViewModel.refresh(context, null, null, locationName, force = true)
+                        }
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                if (currentLang == "kn") "ಕ್ಯಾಶ್ ನವೀಕರಿಸಲಾಗಿದೆ" else "Cache refreshed"
+                            )
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(com.hora.jnana.utils.TranslationUtils.translate("Refresh Cache", currentLang))
+                }
+
+                OutlinedButton(
+                    onClick = { showResetDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(com.hora.jnana.utils.TranslationUtils.translate("Reset Settings", currentLang))
+                }
+            }
+
+            if (showResetDialog) {
+                AlertDialog(
+                    onDismissRequest = { showResetDialog = false },
+                    title = { Text(com.hora.jnana.utils.TranslationUtils.translate("Reset Settings", currentLang)) },
+                    text = { Text(com.hora.jnana.utils.TranslationUtils.translate("Are you sure you want to reset all settings to default values?", currentLang)) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    dataStoreManager.resetSettings()
+                                    showResetDialog = false
+                                }
+                            }
+                        ) {
+                            Text(com.hora.jnana.utils.TranslationUtils.translate("Reset", currentLang), color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showResetDialog = false }) {
+                            Text(com.hora.jnana.utils.TranslationUtils.translate("Cancel", currentLang))
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))

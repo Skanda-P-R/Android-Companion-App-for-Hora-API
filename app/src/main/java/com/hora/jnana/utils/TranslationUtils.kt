@@ -99,7 +99,11 @@ object TranslationUtils {
         "Default: Documents/Kundalis" to "ಡೀಫಾಲ್ಟ್: Documents/Kundalis",
         "Custom Path" to "ಕಸ್ಟಮ್ ಪಾತ್",
         "Save Path" to "ಪಾತ್ ಉಳಿಸಿ",
-        "Select Save Folder" to "ಫೋಲ್ಡರ್ ಆಯ್ಕೆಮಾಡಿ"
+        "Select Save Folder" to "ಫೋಲ್ಡರ್ ಆಯ್ಕೆಮಾಡಿ",
+        "Refresh Cache" to "ಕ್ಯಾಶ್ ನವೀಕರಿಸಿ",
+        "Reset Settings" to "ಸೇಟಿಂಗ್ಸ್ ಮರುಹೊಂದಿಸಿ",
+        "Are you sure you want to reset all settings to default values?" to "ನೀವು ಎಲ್ಲಾ ಸೇಟಿಂಗ್ಸ್ ಅನ್ನು ಮರುಹೊಂದಿಸಲು ಖಚಿತವಾಗಿದ್ದೀರಾ?",
+        "Reset" to "ಮರುಹೊಂದಿಸಿ"
     )
 
     fun translate(value: String, lang: String, category: String = "ui"): String {

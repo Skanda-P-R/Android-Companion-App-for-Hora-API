@@ -310,7 +310,11 @@ fun AppNavigation(activity: MainActivity) {
                 navController = navController,
                 dataStoreManager = dataStoreManager,
                 authRepository = authRepository,
-                repo = horaRepository
+                repo = horaRepository,
+                homeViewModel = homeViewModel,
+                location = locationState,
+                locationName = locationName,
+                locationMode = locationMode
             )
         }
         composable("licenses") {

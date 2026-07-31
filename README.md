@@ -60,7 +60,7 @@ For more detailed information, please refer to the following documents:
 
 This project is licensed under the **GNU Affero General Public License v3 (AGPL-3.0)**. See the [LICENSE](LICENSE) file for the full license text.
 
-This application consumes the [Hora and Panchanga REST API](https://github.com/Skanda-P-R/Hora-and-Panchanga-REST-API), which utilizes the **Swiss Ephemeris** for high-precision astronomical calculations. In compliance with the Swiss Ephemeris public license, this project is also released under the AGPL.
+This application consumes the [HoraJnana REST API](https://github.com/Skanda-P-R/HoraJnana-REST-API.git), which utilizes the **Swiss Ephemeris** for high-precision astronomical calculations. In compliance with the Swiss Ephemeris public license, this project is also released under the AGPL.
 
 *Swiss Ephemeris is copyright © Astrodienst AG, Switzerland.*
 

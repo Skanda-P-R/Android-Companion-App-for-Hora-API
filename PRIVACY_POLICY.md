@@ -27,7 +27,7 @@ The app uses Google Sign-In (via Jetpack Credential Manager) for secure authenti
 
 ## 3. Third-Party Services
 
-Our app consumes the [HoraJnana REST API](https://github.com/Skanda-P-R/Hora-and-Panchanga-REST-API). While the app sends your authentication token to the API to verify your identity, it does **not** send your current GPS coordinates to the API server.
+Our app consumes the [HoraJnana REST API](https://github.com/Skanda-P-R/HoraJnana-REST-API.git). While the app sends your authentication token to the API to verify your identity, it does **not** send your current GPS coordinates to the API server.
 
 ## 4. Your Consent
 

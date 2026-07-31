@@ -54,7 +54,7 @@ fun LicensesScreen(navController: NavController, lang: String) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = { uriHandler.openUri("https://github.com/Skanda-P-R/Android-Companion-App-for-Hora-API") },
+                    onClick = { uriHandler.openUri("https://github.com/Skanda-P-R/HoraJnana-Android-App") },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
@@ -64,7 +64,7 @@ fun LicensesScreen(navController: NavController, lang: String) {
                     )
                 }
                 Button(
-                    onClick = { uriHandler.openUri("https://github.com/Skanda-P-R/Hora-and-Panchanga-REST-API") },
+                    onClick = { uriHandler.openUri("https://github.com/Skanda-P-R/HoraJnana-REST-API") },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(

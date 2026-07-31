@@ -1,14 +1,17 @@
 package com.hora.jnana.ui.login
 
 import android.content.Context
+import android.util.Base64
 import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.hora.jnana.BuildConfig
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import java.security.SecureRandom
 
 class LoginViewModel(
     private val authService: AuthService,
@@ -38,13 +42,18 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState
 
+    private fun generateNonce(): String {
+        val bytes = ByteArray(32)
+        SecureRandom().nextBytes(bytes)
+        return Base64.encodeToString(bytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
+    }
+
     fun loginWithGoogle(context: Context, uuid: String, onLoginSuccess: () -> Unit) {
         val credentialManager = CredentialManager.create(context)
 
-        val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(filterByAuthorizedAccounts = false)
-            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
-            .setAutoSelectEnabled(true)
+        val googleIdOption: GetSignInWithGoogleOption = GetSignInWithGoogleOption.Builder(
+            serverClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+        ).setNonce(generateNonce())
             .build()
 
         val request: GetCredentialRequest = GetCredentialRequest.Builder()
@@ -78,9 +87,15 @@ class LoginViewModel(
                         _uiState.value = LoginUiState.Error("Unexpected sign-in response")
                     }
                 }
+            } catch (e: NoCredentialException) {
+                if (BuildConfig.DEBUG) Log.e(tag, "No credentials available", e)
+                _uiState.value = LoginUiState.Error("No Google accounts found on device")
+            } catch (e: GetCredentialCancellationException) {
+                if (BuildConfig.DEBUG) Log.e(tag, "Sign-in cancelled", e)
+                _uiState.value = LoginUiState.Idle
             } catch (e: GetCredentialException) {
                 if (BuildConfig.DEBUG) Log.e(tag, "Credential Manager error", e)
-                _uiState.value = LoginUiState.Error("Sign-in cancelled or failed")
+                _uiState.value = LoginUiState.Error("Sign-in failed: ${e.message}")
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) Log.e(tag, "Google sign-in error", e)
                 _uiState.value = LoginUiState.Error("An error occurred during sign-in")

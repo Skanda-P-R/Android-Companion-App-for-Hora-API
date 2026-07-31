@@ -151,4 +151,12 @@ class DataStoreManager(private val context: Context) {
             prefs[KEY_PRIVACY_ACCEPTED] = accepted
         }
     }
+
+    suspend fun resetSettings() {
+        context.dataStore.edit { prefs ->
+            val privacyAccepted = prefs[KEY_PRIVACY_ACCEPTED] ?: false
+            prefs.clear()
+            prefs[KEY_PRIVACY_ACCEPTED] = privacyAccepted
+        }
+    }
 }

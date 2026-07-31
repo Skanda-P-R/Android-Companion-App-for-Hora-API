@@ -88,15 +88,6 @@ fun HomeScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
-                    IconButton(onClick = { 
-                        if (locationMode == "gps" && quantizedLocation != null) {
-                            viewModel.refresh(context, quantizedLocation.first, quantizedLocation.second, null, force = true)
-                        } else if (locationMode == "manual") {
-                            viewModel.refresh(context, null, null, locationName, force = true)
-                        }
-                    }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                    }
                     IconButton(onClick = { navController.navigate("settings") }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
