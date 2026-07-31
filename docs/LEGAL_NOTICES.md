@@ -29,3 +29,5 @@ The HoraJnana Android app is built using several high-quality open-source librar
 ## Icons and Graphics
 
 - Astrological icons and UI elements are custom-designed or used under permissive licenses (Material Symbols/Icons).
+
+*Last Updated: July 31, 2026*

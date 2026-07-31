@@ -19,11 +19,10 @@ android {
         applicationId = "com.hora.jnana"
         minSdk = 23
         targetSdk = 34
-        versionCode = 13
-        versionName = "0.6.4"
+        versionCode = 14
+        versionName = "0.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"747373461741-ljjkujthicdvq3eeti6hcgt9j8eh939i.apps.googleusercontent.com\"")
         buildConfigField("String", "BASE_URL", "\"https://ndaskka.pythonanywhere.com/\"")
     }
 
@@ -100,11 +99,6 @@ dependencies {
     // Security
     implementation("androidx.security:security-crypto:1.1.0")
     
-    // Credential Manager
-    implementation("androidx.credentials:credentials:1.3.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
-
     // Location
     implementation("com.google.android.gms:play-services-location:21.1.0")
 

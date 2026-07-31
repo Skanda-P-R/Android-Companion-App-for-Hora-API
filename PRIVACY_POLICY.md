@@ -15,9 +15,9 @@ HoraJnana requires access to your device's location (Fine and Coarse location) t
 - **Manual Overwrite:** You have the option to disable GPS tracking and manually select a location from our registry if you prefer not to grant location permissions.
 
 ### Authentication Data
-The app uses Google Sign-In (via Jetpack Credential Manager) for secure authentication. 
-- We only receive your name, email, and profile picture URL from Google.
-- This information is used to personalize your experience and secure your access to the Hora API.
+The app uses a unique device identifier (Android ID) for authentication. 
+- We do **not** collect or store your name, email, or profile picture.
+- This identifier is used to secure your access to the Hora API and manage your session without requiring personal information.
 
 ## 2. Data Storage and Security
 
@@ -27,7 +27,7 @@ The app uses Google Sign-In (via Jetpack Credential Manager) for secure authenti
 
 ## 3. Third-Party Services
 
-Our app consumes the [HoraJnana REST API](https://github.com/Skanda-P-R/HoraJnana-REST-API.git). While the app sends your authentication token to the API to verify your identity, it does **not** send your current GPS coordinates to the API server.
+Our app consumes the [HoraJnana REST API](https://github.com/Skanda-P-R/HoraJnana-REST-API.git). While the app sends your authentication token to the API to verify your device's access, it does **not** send your current GPS coordinates to the API server.
 
 ## 4. Your Consent
 

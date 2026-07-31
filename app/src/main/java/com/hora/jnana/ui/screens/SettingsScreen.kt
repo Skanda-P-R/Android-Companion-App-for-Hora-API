@@ -20,11 +20,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.hora.jnana.DataStoreManager
 import com.hora.jnana.data.AuthRepository
 import com.hora.jnana.ui.theme.AppTheme
@@ -55,10 +53,6 @@ fun SettingsScreen(
     val currentSavePath by dataStoreManager.savePathFlow.collectAsState(initial = null)
     val currentChartStyle by dataStoreManager.chartStyleFlow.collectAsState(initial = "south")
     val context = LocalContext.current
-    
-    val userEmail by authRepository.userEmail.collectAsState(initial = null)
-    val userName by authRepository.userName.collectAsState(initial = null)
-    val userPicture by authRepository.userPicture.collectAsState(initial = null)
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -107,57 +101,6 @@ fun SettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
-            // Profile Section
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (userPicture != null) {
-                        AsyncImage(
-                            model = userPicture,
-                            contentDescription = "Profile Picture",
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surface)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = userName?.take(1)?.uppercase() ?: "?",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column {
-                        Text(
-                            text = userName ?: "User",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = userEmail ?: "",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
             Text(
                 if (currentLang == "kn") "ಭಾಷೆ" else "Language", 
                 style = MaterialTheme.typography.titleMedium
@@ -328,7 +271,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("HoraJnana v0.6.4", style = MaterialTheme.typography.bodyMedium)
+            Text("HoraJnana v0.7.0", style = MaterialTheme.typography.bodyMedium)
             
             Spacer(modifier = Modifier.height(8.dp))
             

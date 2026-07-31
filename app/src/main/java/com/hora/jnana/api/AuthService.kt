@@ -1,7 +1,7 @@
 package com.hora.jnana.api
 
 import com.hora.jnana.BuildConfig
-import com.hora.jnana.api.models.GoogleLoginRequest
+import com.hora.jnana.api.models.LoginRequest
 import com.hora.jnana.api.models.LoginResponse
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -12,8 +12,8 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthService {
-    @POST("api/v1/auth/google-login")
-    suspend fun googleLogin(@Body request: GoogleLoginRequest): LoginResponse
+    @POST("api/v1/auth/login")
+    suspend fun login(@Body request: LoginRequest): LoginResponse
 
     companion object {
         fun create(

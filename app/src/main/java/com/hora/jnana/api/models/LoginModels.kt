@@ -3,22 +3,13 @@ package com.hora.jnana.api.models
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
-data class GoogleLoginRequest(
-    val idToken: String,
+data class LoginRequest(
     val device_uuid: String
 )
 
 @JsonClass(generateAdapter = true)
 data class LoginResponse(
-    val token: String,
-    val user: UserInfo? = null
-)
-
-@JsonClass(generateAdapter = true)
-data class UserInfo(
-    val email: String,
-    val name: String?,
-    val picture: String?
+    val token: String
 )
 
 @JsonClass(generateAdapter = true)

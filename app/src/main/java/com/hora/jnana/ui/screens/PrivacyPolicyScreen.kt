@@ -52,8 +52,8 @@ fun PrivacyPolicyScreen(navController: NavController, lang: String) {
             PolicySection(
                 title = if (lang == "kn") "ಲಾಗಿನ್ ಡೇಟಾ" else "Authentication",
                 content = if (lang == "kn")
-                    "ಸುರಕ್ಷಿತ ಪ್ರವೇಶಕ್ಕಾಗಿ ನಾವು Google ಲಾಗಿನ್ ಬಳಸುತ್ತೇವೆ. ನಿಮ್ಮ ಹೆಸರು ಮತ್ತು ಇಮೇಲ್ ಮಾತ್ರ ಬಳಸಲಾಗುತ್ತದೆ."
-                    else "We use Google Sign-In for secure authentication. Only your name and email are used to secure your session."
+                    "ನಿಮ್ಮ ಸಾಧನದ ಅನನ್ಯ ಗುರುತಿಸುವಿಕೆಯನ್ನು ಬಳಸಿಕೊಂಡು ನಾವು ಸುರಕ್ಷಿತ ಪ್ರವೇಶವನ್ನು ಒದಗಿಸುತ್ತೇವೆ. ಯಾವುದೇ ವೈಯಕ್ತಿಕ ಮಾಹಿತಿಯನ್ನು ಸಂಗ್ರಹಿಸಲಾಗುವುದಿಲ್ಲ."
+                    else "We use a unique device identifier for secure authentication. No personal information such as name or email is collected or stored."
             )
 
             PolicySection(
@@ -65,7 +65,7 @@ fun PrivacyPolicyScreen(navController: NavController, lang: String) {
             
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Last Updated: July 29, 2026",
+                text = "Last Updated: July 31, 2026",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.secondary
             )

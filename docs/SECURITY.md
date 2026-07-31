@@ -1,27 +1,23 @@
-# Security & Authorization - Google Identity
+# Security & Authorization - Device Identity
 
-This document describes the security architecture implemented in the HoraJnana App as of v0.6.0. The app uses a modern verified identity model using Google Sign-In.
+This document describes the security architecture implemented in the HoraJnana App. The app uses a device-based identity model for simplified and secure access.
 
 ---
 
 ## 1. Identity & Authentication
 
-The app leverages **Jetpack Credential Manager** to provide a secure and seamless authentication flow.
+The app uses the unique **Android ID** (hashed as a UUID) to provide a secure authentication flow.
 
-*   **Google Sign-In**: Users authenticate using their verified Google accounts. This ensures that the identity is managed by a trusted provider and supports multi-factor authentication (MFA).
-*   **ID Token Exchange**: Upon successful sign-in, the app obtains a **Google ID Token** (a signed JWT). This token is sent to the Hora Backend for verification.
-*   **Backend Verification**: The server verifies the ID Token using Google's public keys to confirm:
-    *   The token was issued by Google (`iss`).
-    *   The token is intended for this specific app/server (`aud` matches the Web Client ID).
-    *   The token has not expired (`exp`).
-*   **User Metadata**: Successful verification allows the server to securely retrieve the user's verified email, name, and profile picture.
+*   **Device-Based Auth**: Users are identified by their device's unique identifier. This removes the need for personal accounts (like Google or Email) while maintaining a consistent session for the device.
+*   **UUID Verification**: The app sends the device UUID to the Hora Backend for authentication.
+*   **Backend Verification**: The server verifies the device identifier to confirm access and issue a session token.
 
 ## 2. Session Management
 
-*   **Bearer Token Auth**: After verifying the Google identity, the server issues a custom session token.
-*   **DataStore Persistence**: The session token and basic user profile (name, picture) are stored locally using **Jetpack DataStore**.
+*   **Bearer Token Auth**: After verifying the device identity, the server issues a custom session token.
+*   **DataStore Persistence**: The session token is stored locally using **Jetpack DataStore**.
 *   **Automatic Invalidation**: The app monitors for `401 Unauthorized` responses. If detected, it immediately clears the local session and redirects the user to the login screen.
-*   **Logout**: Users can explicitly log out from the Settings screen, which wipes all session and profile data.
+*   **Logout**: Users can explicitly log out from the Settings screen, which wipes the session data.
 
 ## 4. Network Security
 
@@ -35,4 +31,4 @@ The app leverages **Jetpack Credential Manager** to provide a secure and seamles
 *   **Local Encryption**: Personalized birth charts saved to the device's storage are encrypted using **AES-256**, making them unreadable to other apps or unauthorized file explorers.
 
 ---
-*Last Updated: 2026-07-26*
+*Last Updated: July 31, 2026*
