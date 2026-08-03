@@ -17,6 +17,7 @@ import com.hora.jnana.models.DashaPeriod
 import com.hora.jnana.models.LocationData
 import com.hora.jnana.utils.EncryptionUtils
 import com.hora.jnana.utils.LocationUtils
+import com.hora.jnana.utils.NetworkUtils
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Job
@@ -38,13 +39,15 @@ data class SavedKundali(
     val lat: Double?,
     val lon: Double?,
     val dashaResponse: DashaResponse,
-    val chartUrl: String?
+    val chartUrl: String?,
+    val svgContent: String? = null
 )
 
 data class BirthState(
     val isLoading: Boolean = false,
     val dashaResponse: DashaResponse? = null,
     val chartUrl: String? = null,
+    val svgContent: String? = null,
     val error: String? = null,
     val inputName: String = "",
     val inputDate: String = "",
@@ -101,6 +104,11 @@ class BirthViewModel(
         // Skip if everything is identical
         if (lat == lastLat && lon == lastLon && location == lastLocName && date == lastDate && time == lastTime && name == lastPersonName) return
 
+        if (!NetworkUtils.isOnline(context)) {
+            _state.value = _state.value.copy(error = "Internet connection is required to fetch new information")
+            return
+        }
+
         // Skip if only minor coordinate drift
         if (!LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon) && 
             location == lastLocName && date == lastDate && time == lastTime && name == lastPersonName) {
@@ -156,33 +164,24 @@ class BirthViewModel(
                     append("&chart_style=$chartStyle")
                 }
 
-                // Pre-fetch chart image
-                val imageRequest = ImageRequest.Builder(context)
-                    .data(chartUrl)
-                    .apply {
-                        if (sessionToken != null) {
-                            addHeader("Authorization", "Bearer $sessionToken")
-                        }
-                    }
-                    .build()
-                
-                val chartJob = async {
-                    context.imageLoader.execute(imageRequest)
-                    _chartLoaded.value = true
-                }
-
                 val dashaDeferred = async { 
                     repo.fetchBirthDasha(lat, lon, location, date, time, lang, depth)
                 }
+                
+                val chartJob = async {
+                    repo.fetchBirthKundaliSvg(lat, lon, location, date, time, name, lang, chartStyle)
+                }
 
                 val dashaResult = dashaDeferred.await()
-                chartJob.await()
+                val svgResult = chartJob.await()
+                _chartLoaded.value = true
 
                 if (dashaResult.isSuccess) {
                     _state.value = _state.value.copy(
                         isLoading = false,
                         dashaResponse = dashaResult.getOrNull(),
-                        chartUrl = chartUrl
+                        chartUrl = chartUrl,
+                        svgContent = svgResult.getOrNull()
                     )
                 } else {
                     _state.value = _state.value.copy(
@@ -227,92 +226,96 @@ class BirthViewModel(
     }
 
     fun saveKundali(saveUri: String?, onResult: (Boolean, String?) -> Unit) {
-        val currentState = _state.value
-        val dasha = currentState.dashaResponse ?: return
-        
-        try {
-            val savedData = SavedKundali(
-                name = currentState.inputName,
-                date = currentState.inputDate,
-                time = currentState.inputTime,
-                locationName = currentState.inputLocationName,
-                lat = currentState.inputLat,
-                lon = currentState.inputLon,
-                dashaResponse = dasha,
-                chartUrl = currentState.chartUrl
-            )
+        viewModelScope.launch {
+            val currentState = _state.value
+            val dasha = currentState.dashaResponse ?: return@launch
             
-            val json = savedKundaliAdapter.toJson(savedData)
-            val encrypted = EncryptionUtils.encrypt(json)
-            val fileName = "${currentState.inputName} - ${currentState.inputDate}.json"
-            
-            if (saveUri.isNullOrEmpty()) {
-                // Use MediaStore for public Documents/Kundalis on API 29+
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val resolver = context.contentResolver
-                    val contentUri = MediaStore.Files.getContentUri("external")
-                    
-                    // Cleanup existing file with same name in same path
-                    val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
-                    val relativePath = "${Environment.DIRECTORY_DOCUMENTS}/Kundalis/"
-                    resolver.delete(contentUri, selection, arrayOf(fileName, relativePath))
-
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                        put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
-                        put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-                    }
-
-                    val uri = resolver.insert(contentUri, contentValues)
-                        ?: throw Exception("Could not create file in MediaStore")
+            try {
+                val savedData = SavedKundali(
+                    name = currentState.inputName,
+                    date = currentState.inputDate,
+                    time = currentState.inputTime,
+                    locationName = currentState.inputLocationName,
+                    lat = currentState.inputLat,
+                    lon = currentState.inputLon,
+                    dashaResponse = dasha,
+                    chartUrl = currentState.chartUrl,
+                    svgContent = currentState.svgContent
+                )
+                
+                val json = savedKundaliAdapter.toJson(savedData)
+                val encrypted = EncryptionUtils.encrypt(json)
+                val fileName = "${currentState.inputName} - ${currentState.inputDate}.json"
+                
+                if (saveUri.isNullOrEmpty()) {
+                    // Use MediaStore for public Documents/Kundalis on API 29+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val resolver = context.contentResolver
+                        val contentUri = MediaStore.Files.getContentUri("external")
                         
-                    resolver.openOutputStream(uri)?.use { output ->
-                        OutputStreamWriter(output).use { it.write(encrypted) }
+                        // Cleanup existing file with same name in same path
+                        val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+                        val relativePath = "${Environment.DIRECTORY_DOCUMENTS}/Kundalis/"
+                        resolver.delete(contentUri, selection, arrayOf(fileName, relativePath))
+
+                        val contentValues = ContentValues().apply {
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                            put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+                        }
+
+                        val uri = resolver.insert(contentUri, contentValues)
+                            ?: throw Exception("Could not create file in MediaStore")
+                            
+                        resolver.openOutputStream(uri)?.use { output ->
+                            OutputStreamWriter(output).use { it.write(encrypted) }
+                        }
+                        onResult(true, "Saved in Documents/Kundalis")
+                    } else {
+                        // Fallback for older devices or as a secondary option
+                        @Suppress("DEPRECATION")
+                        val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Kundalis")
+                        if (!directory.exists()) directory.mkdirs()
+                        val file = File(directory, fileName)
+                        file.writeText(encrypted)
+                        onResult(true, "Saved in Documents/Kundalis")
                     }
-                    onResult(true, "Saved in Documents/Kundalis")
                 } else {
-                    // Fallback for older devices or as a secondary option
-                    @Suppress("DEPRECATION")
-                    val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Kundalis")
-                    if (!directory.exists()) directory.mkdirs()
-                    val file = File(directory, fileName)
-                    file.writeText(encrypted)
-                    onResult(true, "Saved in Documents/Kundalis")
-                }
-            } else {
-                val treeUri = Uri.parse(saveUri)
-                
-                val rootFolder = DocumentFile.fromTreeUri(context, treeUri)
-                if (rootFolder == null || !rootFolder.canWrite()) {
-                    // If custom folder fails, fallback to MediaStore default instead of failing
-                    return saveKundali(null, onResult)
-                }
-                
-                // Create or get "Kundalis" subfolder
-                var targetFolder = rootFolder.findFile("Kundalis")
-                if (targetFolder == null || !targetFolder.isDirectory) {
-                    targetFolder = rootFolder.createDirectory("Kundalis")
-                }
-                
-                if (targetFolder == null) throw Exception("Could not create Kundalis folder")
-                
-                // Check if file exists to overwrite (SAF doesn't overwrite by default)
-                val existingFile = targetFolder.findFile(fileName)
-                existingFile?.delete()
-                
-                // Create the file
-                val documentFile = targetFolder.createFile("application/json", fileName)
-                    ?: throw Exception("Could not create file")
-                
-                context.contentResolver.openOutputStream(documentFile.uri)?.use { output ->
-                    OutputStreamWriter(output).use { writer ->
-                        writer.write(encrypted)
+                    val treeUri = Uri.parse(saveUri)
+                    
+                    val rootFolder = DocumentFile.fromTreeUri(context, treeUri)
+                    if (rootFolder == null || !rootFolder.canWrite()) {
+                        // If custom folder fails, fallback to MediaStore default instead of failing
+                        saveKundali(null, onResult)
+                        return@launch
                     }
+                    
+                    // Create or get "Kundalis" subfolder
+                    var targetFolder = rootFolder.findFile("Kundalis")
+                    if (targetFolder == null || !targetFolder.isDirectory) {
+                        targetFolder = rootFolder.createDirectory("Kundalis")
+                    }
+                    
+                    if (targetFolder == null) throw Exception("Could not create Kundalis folder")
+                    
+                    // Check if file exists to overwrite (SAF doesn't overwrite by default)
+                    val existingFile = targetFolder.findFile(fileName)
+                    existingFile?.delete()
+                    
+                    // Create the file
+                    val documentFile = targetFolder.createFile("application/json", fileName)
+                        ?: throw Exception("Could not create file")
+                    
+                    context.contentResolver.openOutputStream(documentFile.uri)?.use { output ->
+                        OutputStreamWriter(output).use { writer ->
+                            writer.write(encrypted)
+                        }
+                    }
+                    onResult(true, "Saved in ${rootFolder.name}/Kundalis")
                 }
-                onResult(true, "Saved in ${rootFolder.name}/Kundalis")
+            } catch (e: Exception) {
+                onResult(false, e.message)
             }
-        } catch (e: Exception) {
-            onResult(false, e.message)
         }
     }
 
@@ -331,6 +334,7 @@ class BirthViewModel(
                 isLoading = false,
                 dashaResponse = savedData.dashaResponse,
                 chartUrl = savedData.chartUrl,
+                svgContent = savedData.svgContent,
                 error = null,
                 inputName = savedData.name,
                 inputDate = savedData.date,

@@ -6,6 +6,7 @@ import com.hora.jnana.repository.HoraRepository
 import com.hora.jnana.models.DashaResponse
 import com.hora.jnana.models.DashaPeriod
 import com.hora.jnana.utils.LocationUtils
+import com.hora.jnana.utils.NetworkUtils
 import android.content.Context
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -63,6 +64,11 @@ class TransitViewModel(
     ) {
         // Skip if everything is identical
         if (lat == lastLat && lon == lastLon && location == lastLocName && date == lastDate && time == lastTime) return
+
+        if (!NetworkUtils.isOnline(context)) {
+            _state.value = _state.value.copy(error = "Internet connection is required to fetch transit information")
+            return
+        }
 
         // Skip if only minor coordinate drift
         if (!LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon) && 

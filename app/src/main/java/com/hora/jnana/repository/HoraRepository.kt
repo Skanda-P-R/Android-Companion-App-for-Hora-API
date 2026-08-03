@@ -410,6 +410,30 @@ class HoraRepository(private val api: HoraApiService, private val context: Conte
         }
     }
 
+    suspend fun fetchBirthKundaliSvg(
+        lat: Double? = null,
+        lon: Double? = null,
+        location: String? = null,
+        date: String? = null,
+        time: String? = null,
+        name: String? = null,
+        lang: String,
+        chartStyle: String = "south"
+    ): Result<String> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val apiLang = if (lang == "kn") "kan" else "en"
+            val respBody = api.getBirthKundaliSvg(
+                LocationUtils.formatCoord(lat),
+                LocationUtils.formatCoord(lon),
+                location, date, time, name, apiLang, chartStyle
+            )
+            Result.success(respBody.string())
+        } catch (e: Exception) {
+            Log.e("HoraRepository", "Error fetching birth kundali svg", e)
+            Result.failure(e)
+        }
+    }
+
     suspend fun fetchLocations(): Result<Map<String, Map<String, Any>>> = withContext(Dispatchers.IO) {
         return@withContext try {
             Result.success(api.getLocations())

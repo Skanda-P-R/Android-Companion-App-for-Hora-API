@@ -412,13 +412,21 @@ fun BirthInfoTab(state: BirthState, viewModel: BirthViewModel, lang: String, val
 
 @Composable
 fun BirthKundaliTab(state: BirthState, sessionToken: String?) {
-    val url = state.chartUrl ?: return
+    val context = LocalContext.current
+    val model = remember(state.chartUrl, state.svgContent) {
+        if (!state.svgContent.isNullOrEmpty()) {
+            state.svgContent.toByteArray()
+        } else {
+            ImageRequest.Builder(context)
+                .data(state.chartUrl)
+                .addHeader("Authorization", "Bearer $sessionToken")
+                .build()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(url)
-                .addHeader("Authorization", "Bearer $sessionToken")
-                .build(),
+            model = model,
             contentDescription = "Birth Kundali",
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             contentScale = ContentScale.Fit

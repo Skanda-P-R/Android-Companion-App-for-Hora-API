@@ -84,6 +84,18 @@ interface HoraApiService {
         @Query("depth") depth: Int? = null
     ): com.hora.jnana.models.DashaResponse
 
+    @GET("api/v1/kundali/birth/svg")
+    suspend fun getBirthKundaliSvg(
+        @Query("lat") lat: String? = null,
+        @Query("lon") lon: String? = null,
+        @Query("location") location: String? = null,
+        @Query("date") date: String? = null,
+        @Query("time") time: String? = null,
+        @Query("name") name: String? = null,
+        @Query("lang") lang: String = "en",
+        @Query("chart_style") chartStyle: String = "south"
+    ): ResponseBody
+
     @POST("api/v1/auth/logout")
     suspend fun logout(): ResponseBody
 
