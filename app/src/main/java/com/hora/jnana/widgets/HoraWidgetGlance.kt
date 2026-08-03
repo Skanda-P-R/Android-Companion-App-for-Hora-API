@@ -5,18 +5,37 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.*
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.*
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.layout.*
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.text.FontWeight
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.hora.jnana.CacheManager
 import com.hora.jnana.DataStoreManager
+import com.hora.jnana.api.HoraApiService
 import com.hora.jnana.data.AuthRepository
 import com.hora.jnana.repository.HoraRepository
-import com.hora.jnana.api.HoraApiService
 import com.hora.jnana.utils.TranslationUtils
+import com.hora.jnana.workers.HoraUpdateWorker
 import kotlinx.coroutines.flow.first
+
+class RefreshActionCallback : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val workRequest = OneTimeWorkRequestBuilder<HoraUpdateWorker>().build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "HoraUpdateManual",
+            ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+    }
+}
 
 class HoraWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -54,6 +73,7 @@ class HoraWidget : GlanceAppWidget() {
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .padding(8.dp)
+                .clickable(actionRunCallback<RefreshActionCallback>())
         ) {
             // Header
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
