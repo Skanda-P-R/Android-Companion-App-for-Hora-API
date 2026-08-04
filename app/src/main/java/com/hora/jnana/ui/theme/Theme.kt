@@ -216,7 +216,7 @@ private val RedDarkColorScheme = darkColorScheme(
 
 @Composable
 fun HoraJnanaTheme(
-    themeName: String = "purple",
+    themeName: String = "green",
     themeMode: String = "light",
     content: @Composable () -> Unit
 ) {

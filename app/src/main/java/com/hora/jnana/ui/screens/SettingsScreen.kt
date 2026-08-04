@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,8 +49,8 @@ fun SettingsScreen(
     var showResetDialog by remember { mutableStateOf(false) }
 
     val currentLang by dataStoreManager.langFlow.collectAsState(initial = "en")
-    val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "blue")
-    val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "system")
+    val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "green")
+    val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
     val currentDashaLevel by dataStoreManager.dashaLevelFlow.collectAsState(initial = 3)
     val currentSavePath by dataStoreManager.savePathFlow.collectAsState(initial = null)
     val currentChartStyle by dataStoreManager.chartStyleFlow.collectAsState(initial = "south")
@@ -190,20 +192,34 @@ fun SettingsScreen(
                 if (currentLang == "kn") "ದಶಾ ಮಟ್ಟಗಳು" else "Dasha Levels",
                 style = MaterialTheme.typography.titleMedium
             )
-            Row(Modifier.selectableGroup()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                Modifier
+                    .selectableGroup()
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 listOf(1, 2, 3).forEach { level ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .selectable(
-                                selected = (currentDashaLevel == level),
-                                onClick = { scope.launch { dataStoreManager.saveDashaLevel(level) } },
-                                role = Role.RadioButton
-                            )
-                            .padding(8.dp)
+                    val label = when(level) {
+                        1 -> "Mahadasha"
+                        2 -> "Antardasha"
+                        else -> "Pratyantardasha"
+                    }
+                    SelectableSquareButton(
+                        selected = (currentDashaLevel == level),
+                        onClick = { scope.launch { dataStoreManager.saveDashaLevel(level) } },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        RadioButton(selected = (currentDashaLevel == level), onClick = null)
-                        Text(text = level.toString(), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = level.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = com.hora.jnana.utils.TranslationUtils.translate(label, currentLang),
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
@@ -214,25 +230,43 @@ fun SettingsScreen(
                 if (currentLang == "kn") "ಕುಂಡಲಿ ಚಾರ್ಟ್ ಶೈಲಿ" else "Kundali Chart Style",
                 style = MaterialTheme.typography.titleMedium
             )
-            Row(Modifier.selectableGroup()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                Modifier
+                    .selectableGroup()
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 val chartOptions = listOf(
                     "north" to if (currentLang == "kn") "ಉತ್ತರ" else "North",
                     "south" to if (currentLang == "kn") "ದಕ್ಷಿಣ" else "South",
                     "east" to if (currentLang == "kn") "ಪೂರ್ವ" else "East"
                 )
                 chartOptions.forEach { (style, label) ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .selectable(
-                                selected = (currentChartStyle == style),
-                                onClick = { scope.launch { dataStoreManager.saveChartStyle(style) } },
-                                role = Role.RadioButton
-                            )
-                            .padding(8.dp)
+                    SelectableSquareButton(
+                        selected = (currentChartStyle == style),
+                        onClick = { scope.launch { dataStoreManager.saveChartStyle(style) } },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        RadioButton(selected = (currentChartStyle == style), onClick = null)
-                        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .padding(4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when (style) {
+                                "north" -> NorthIndianChartIcon(color = LocalContentColor.current)
+                                "south" -> SouthIndianChartIcon(color = LocalContentColor.current)
+                                "east" -> EastIndianChartIcon(color = LocalContentColor.current)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1
+                        )
                     }
                 }
             }
@@ -243,7 +277,16 @@ fun SettingsScreen(
                 if (currentLang == "kn") "ಸ್ಥಳ" else "Location", 
                 style = MaterialTheme.typography.titleMedium
             )
-            Button(onClick = { navController.navigate("locations") }) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { navController.navigate("locations") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Icon(Icons.Default.LocationOn, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(if (currentLang == "kn") "ಸ್ಥಳವನ್ನು ಬದಲಾಯಿಸಿ" else "Change Location")
             }
 
@@ -261,7 +304,10 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = { folderPickerLauncher.launch(null) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer, 
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             ) {
                 Icon(Icons.Default.Folder, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -271,7 +317,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("HoraJnana v0.7.1", style = MaterialTheme.typography.bodyMedium)
+            Text("HoraJnana v0.8.0", style = MaterialTheme.typography.bodyMedium)
             
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -393,6 +439,114 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SelectableSquareButton(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        selected = selected,
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        border = BorderStroke(
+            width = if (selected) 2.dp else 1.dp,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        ),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+fun NorthIndianChartIcon(color: Color) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        drawRect(color = color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, 0f), end = androidx.compose.ui.geometry.Offset(w, h), strokeWidth = 2.dp.toPx())
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w, 0f), end = androidx.compose.ui.geometry.Offset(0f, h), strokeWidth = 2.dp.toPx())
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w / 2, 0f), end = androidx.compose.ui.geometry.Offset(0f, h / 2), strokeWidth = 2.dp.toPx())
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, h / 2), end = androidx.compose.ui.geometry.Offset(w / 2, h), strokeWidth = 2.dp.toPx())
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w / 2, h), end = androidx.compose.ui.geometry.Offset(w, h / 2), strokeWidth = 2.dp.toPx())
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w, h / 2), end = androidx.compose.ui.geometry.Offset(w / 2, 0f), strokeWidth = 2.dp.toPx())
+    }
+}
+
+@Composable
+fun SouthIndianChartIcon(color: Color) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        val strokeWidth = 1.5.dp.toPx()
+        
+        // Outer border
+        drawRect(color = color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth))
+        
+        // Vertical lines
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w / 4, 0f), end = androidx.compose.ui.geometry.Offset(w / 4, h), strokeWidth = strokeWidth)
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(3 * w / 4, 0f), end = androidx.compose.ui.geometry.Offset(3 * w / 4, h), strokeWidth = strokeWidth)
+        // Middle vertical segments
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w / 2, 0f), end = androidx.compose.ui.geometry.Offset(w / 2, h / 4), strokeWidth = strokeWidth)
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w / 2, 3 * h / 4), end = androidx.compose.ui.geometry.Offset(w / 2, h), strokeWidth = strokeWidth)
+        
+        // Horizontal lines
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, h / 4), end = androidx.compose.ui.geometry.Offset(w, h / 4), strokeWidth = strokeWidth)
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, 3 * h / 4), end = androidx.compose.ui.geometry.Offset(w, 3 * h / 4), strokeWidth = strokeWidth)
+        // Middle horizontal segments
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, h / 2), end = androidx.compose.ui.geometry.Offset(w / 4, h / 2), strokeWidth = strokeWidth)
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(3 * w / 4, h / 2), end = androidx.compose.ui.geometry.Offset(w, h / 2), strokeWidth = strokeWidth)
+        
+        // Center square border
+        drawRect(
+            color = color,
+            topLeft = androidx.compose.ui.geometry.Offset(w / 4, h / 4),
+            size = androidx.compose.ui.geometry.Size(w / 2, h / 2),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
+        )
+    }
+}
+
+@Composable
+fun EastIndianChartIcon(color: Color) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        val strokeWidth = 1.5.dp.toPx()
+        
+        // Outer border
+        drawRect(color = color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth))
+        
+        // 3x3 Grid
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w / 3, 0f), end = androidx.compose.ui.geometry.Offset(w / 3, h), strokeWidth = strokeWidth)
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(2 * w / 3, 0f), end = androidx.compose.ui.geometry.Offset(2 * w / 3, h), strokeWidth = strokeWidth)
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, h / 3), end = androidx.compose.ui.geometry.Offset(w, h / 3), strokeWidth = strokeWidth)
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, 2 * h / 3), end = androidx.compose.ui.geometry.Offset(w, 2 * h / 3), strokeWidth = strokeWidth)
+        
+        // Diagonals in corner squares
+        // Top-Left
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, 0f), end = androidx.compose.ui.geometry.Offset(w / 3, h / 3), strokeWidth = strokeWidth)
+        // Top-Right
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w, 0f), end = androidx.compose.ui.geometry.Offset(2 * w / 3, h / 3), strokeWidth = strokeWidth)
+        // Bottom-Left
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(0f, h), end = androidx.compose.ui.geometry.Offset(w / 3, 2 * h / 3), strokeWidth = strokeWidth)
+        // Bottom-Right
+        drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w, h), end = androidx.compose.ui.geometry.Offset(2 * w / 3, 2 * h / 3), strokeWidth = strokeWidth)
     }
 }
 

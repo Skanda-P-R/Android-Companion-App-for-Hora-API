@@ -103,7 +103,12 @@ object TranslationUtils {
         "Refresh Cache" to "ಕ್ಯಾಶ್ ನವೀಕರಿಸಿ",
         "Reset Settings" to "ಸೇಟಿಂಗ್ಸ್ ಮರುಹೊಂದಿಸಿ",
         "Are you sure you want to reset all settings to default values?" to "ನೀವು ಎಲ್ಲಾ ಸೇಟಿಂಗ್ಸ್ ಅನ್ನು ಮರುಹೊಂದಿಸಲು ಖಚಿತವಾಗಿದ್ದೀರಾ?",
-        "Reset" to "ಮರುಹೊಂದಿಸಿ"
+        "Reset" to "ಮರುಹೊಂದಿಸಿ",
+        "Chart Style" to "ಚಾರ್ಟ್ ಶೈಲಿ",
+        "North" to "ಉತ್ತರ",
+        "South" to "ದಕ್ಷಿಣ",
+        "East" to "ಪೂರ್ವ",
+        "Location" to "ಸ್ಥಳ"
     )
 
     fun translate(value: String, lang: String, category: String = "ui"): String {

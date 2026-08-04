@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hora.jnana.repository.HoraRepository
 import com.hora.jnana.models.DashaResponse
 import com.hora.jnana.models.DashaPeriod
+import com.hora.jnana.models.LocationData
 import com.hora.jnana.utils.LocationUtils
 import com.hora.jnana.utils.NetworkUtils
 import android.content.Context
@@ -22,7 +23,9 @@ data class TransitState(
     val isLoading: Boolean = false,
     val dashaResponse: DashaResponse? = null,
     val chartUrl: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val locations: List<LocationData> = emptyList(),
+    val isFetchingLocations: Boolean = false
 )
 
 class TransitViewModel(
@@ -49,6 +52,8 @@ class TransitViewModel(
     private var lastLocName: String? = null
     private var lastDate: String? = null
     private var lastTime: String? = null
+    private var lastChartStyle: String? = null
+    private var lastDepth: Int? = null
 
     fun fetchData(
         lat: Double?,
@@ -62,17 +67,30 @@ class TransitViewModel(
         chartStyle: String,
         sessionToken: String?
     ) {
-        // Skip if everything is identical
-        if (lat == lastLat && lon == lastLon && location == lastLocName && date == lastDate && time == lastTime) return
+        val sameParams = lat == lastLat && lon == lastLon && location == lastLocName && 
+                         date == lastDate && time == lastTime && chartStyle == lastChartStyle &&
+                         depth == lastDepth
+        if (sameParams) return
 
         if (!NetworkUtils.isOnline(context)) {
             _state.value = _state.value.copy(error = "Internet connection is required to fetch transit information")
             return
         }
 
-        // Skip if only minor coordinate drift
+        // Check if only chart style changed
+        val onlyChartStyleChanged = lat == lastLat && lon == lastLon && location == lastLocName && 
+                                   date == lastDate && time == lastTime && depth == lastDepth &&
+                                   chartStyle != lastChartStyle
+
+        if (onlyChartStyleChanged) {
+            updateOnlyChart(lat, lon, location, date, time, lang, apiBase, chartStyle, sessionToken)
+            lastChartStyle = chartStyle
+            return
+        }
+
+        // Skip if only minor coordinate drift and nothing else changed
         if (!LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon) && 
-            location == lastLocName && date == lastDate && time == lastTime) {
+            location == lastLocName && date == lastDate && time == lastTime && chartStyle == lastChartStyle) {
             lastLat = lat
             lastLon = lon
             return
@@ -85,6 +103,8 @@ class TransitViewModel(
             lastLocName = location
             lastDate = date
             lastTime = time
+            lastChartStyle = chartStyle
+            lastDepth = depth
 
             _state.value = _state.value.copy(isLoading = true, error = null)
             _chartLoaded.value = false
@@ -158,6 +178,78 @@ class TransitViewModel(
 
     fun selectL2(period: DashaPeriod?) {
         _selectedL2.value = period
+    }
+
+    private fun updateOnlyChart(
+        lat: Double?,
+        lon: Double?,
+        location: String?,
+        date: String,
+        time: String,
+        lang: String,
+        apiBase: String,
+        chartStyle: String,
+        sessionToken: String?
+    ) {
+        val apiLang = if (lang == "kn") "kan" else "en"
+        val normalizedBase = if (apiBase.endsWith("/")) apiBase else "$apiBase/"
+
+        val chartUrl = buildString {
+            append("${normalizedBase}api/v1/kundali/svg?")
+            if (location != null) {
+                append("location=${java.net.URLEncoder.encode(location, "UTF-8")}")
+            } else if (lat != null && lon != null) {
+                val fLat = LocationUtils.formatCoord(lat)
+                val fLon = LocationUtils.formatCoord(lon)
+                append("lat=$fLat&lon=$fLon")
+            } else {
+                append("lat=12.9716&lon=77.5946")
+            }
+            append("&date=$date")
+            append("&time=$time")
+            append("&lang=$apiLang")
+            append("&chart_style=$chartStyle")
+        }
+
+        _state.value = _state.value.copy(chartUrl = chartUrl, isLoading = true)
+        _chartLoaded.value = false
+
+        viewModelScope.launch {
+            val imageRequest = ImageRequest.Builder(context)
+                .data(chartUrl)
+                .apply {
+                    if (sessionToken != null) {
+                        addHeader("Authorization", "Bearer $sessionToken")
+                    }
+                }
+                .build()
+            
+            context.imageLoader.execute(imageRequest)
+            _chartLoaded.value = true
+            _state.value = _state.value.copy(isLoading = false)
+        }
+    }
+
+    fun fetchLocations() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isFetchingLocations = true)
+            val res = repo.fetchLocations()
+            if (res.isSuccess) {
+                val map = res.getOrNull() ?: emptyMap()
+                val locList = map.map { (name, data) ->
+                    LocationData(
+                        name = name,
+                        latitude = (data["latitude"] as? Number)?.toDouble() ?: 0.0,
+                        longitude = (data["longitude"] as? Number)?.toDouble() ?: 0.0,
+                        timezone = data["timezone"]?.toString(),
+                        description = data["description"]?.toString()
+                    )
+                }.sortedBy { it.name }
+                _state.value = _state.value.copy(locations = locList, isFetchingLocations = false)
+            } else {
+                _state.value = _state.value.copy(isFetchingLocations = false)
+            }
+        }
     }
 
     fun formatDecimalYears(decimalYears: Double): String {

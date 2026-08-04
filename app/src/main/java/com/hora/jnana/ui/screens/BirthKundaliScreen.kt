@@ -3,15 +3,19 @@ package com.hora.jnana.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Grid3x3
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -29,7 +35,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun BirthKundaliScreen(
     navController: NavController,
@@ -49,6 +55,7 @@ fun BirthKundaliScreen(
     var selectedDate by remember { mutableStateOf<Calendar?>(null) }
     var selectedTime by remember { mutableStateOf<Calendar?>(null) }
     var showChart by remember { mutableStateOf(false) }
+    var localChartStyle by remember { mutableStateOf(chartStyle) }
     
     // For Location Searchable Dropdown
     var locationSearch by remember { mutableStateOf("") }
@@ -57,12 +64,13 @@ fun BirthKundaliScreen(
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showStyleSelector by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
 
     val selectedL1 by viewModel.selectedL1.collectAsState()
     val selectedL2 by viewModel.selectedL2.collectAsState()
 
-    var activeTab by remember { mutableIntStateOf(0) } // 0: Info, 1: Kundali, 2: Dasha
+    val pagerState = rememberPagerState(pageCount = { 3 })
 
     val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val sdfTime = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -93,6 +101,8 @@ fun BirthKundaliScreen(
                         selectedTime = calTime
                     } catch (_: Exception) {}
                     
+                    localChartStyle = loadedState.chartStyle
+                    
                     scope.launch { snackbarHostState.showSnackbar("Loaded: ${loadedState.inputName}") }
                 } else {
                     scope.launch { snackbarHostState.showSnackbar("Load failed: $msg") }
@@ -102,11 +112,41 @@ fun BirthKundaliScreen(
     }
 
     LaunchedEffect(Unit) {
+        viewModel.resetState()
         viewModel.fetchLocations()
+        nameInput = ""
+        selectedDate = null
+        selectedTime = null
+        selectedLocName = locationName ?: ""
+        locationSearch = ""
+        showChart = false
     }
     
     LaunchedEffect(state.inputName) {
-        if (state.inputName.isNotEmpty()) nameInput = state.inputName
+        nameInput = state.inputName
+    }
+
+    // Effect to handle chart style change after chart is shown
+    LaunchedEffect(localChartStyle) {
+        if (showChart && selectedDate != null && selectedTime != null) {
+            // Only fetch if the style changed or we don't have a chart yet
+            if (localChartStyle != state.chartStyle || (state.chartUrl == null && state.svgContent == null)) {
+                val finalLocName = if (selectedLocName.isNotEmpty()) selectedLocName else locationName
+                viewModel.fetchData(
+                    lat = if (finalLocName == null) location?.first else null,
+                    lon = if (finalLocName == null) location?.second else null,
+                    location = finalLocName,
+                    date = sdfDate.format(selectedDate!!.time),
+                    time = sdfTime.format(selectedTime!!.time),
+                    name = nameInput,
+                    lang = lang,
+                    apiBase = apiBase,
+                    depth = dashaLevel,
+                    chartStyle = localChartStyle,
+                    sessionToken = sessionToken
+                )
+            }
+        }
     }
 
     val valueFontWeight = if (lang == "kn") FontWeight.Normal else FontWeight.Bold
@@ -144,6 +184,18 @@ fun BirthKundaliScreen(
         )
     }
 
+    if (showStyleSelector) {
+        BirthStyleSelectorDialog(
+            onDismiss = { showStyleSelector = false },
+            currentStyle = localChartStyle,
+            onStyleSelected = { style ->
+                localChartStyle = style
+                showStyleSelector = false
+            },
+            lang = lang
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -158,6 +210,9 @@ fun BirthKundaliScreen(
                 },
                 actions = {
                     if (showChart) {
+                        IconButton(onClick = { showStyleSelector = true }) {
+                            Icon(Icons.Default.Grid3x3, contentDescription = "Chart Style")
+                        }
                         IconButton(onClick = {
                             viewModel.saveKundali(savePath) { success, msg ->
                                 scope.launch { snackbarHostState.showSnackbar(if (success) msg ?: "Saved!" else "Save failed: $msg") }
@@ -283,7 +338,7 @@ fun BirthKundaliScreen(
                                 lang = lang,
                                 apiBase = apiBase,
                                 depth = dashaLevel,
-                                chartStyle = chartStyle,
+                                chartStyle = localChartStyle,
                                 sessionToken = sessionToken
                             )
                             showChart = true 
@@ -296,14 +351,23 @@ fun BirthKundaliScreen(
             }
         } else {
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-                TabRow(selectedTabIndex = activeTab) {
-                    Tab(selected = activeTab == 0, onClick = { activeTab = 0 }) {
+                TabRow(selectedTabIndex = pagerState.currentPage) {
+                    Tab(
+                        selected = pagerState.currentPage == 0,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(0) } }
+                    ) {
                         Text(text = TranslationUtils.translate("Info", lang), modifier = Modifier.padding(16.dp))
                     }
-                    Tab(selected = activeTab == 1, onClick = { activeTab = 1 }) {
+                    Tab(
+                        selected = pagerState.currentPage == 1,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(1) } }
+                    ) {
                         Text(text = TranslationUtils.translate("Kundali", lang), modifier = Modifier.padding(16.dp))
                     }
-                    Tab(selected = activeTab == 2, onClick = { activeTab = 2 }) {
+                    Tab(
+                        selected = pagerState.currentPage == 2,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(2) } }
+                    ) {
                         Text(text = TranslationUtils.translate("Dasha", lang), modifier = Modifier.padding(16.dp))
                     }
                 }
@@ -318,8 +382,12 @@ fun BirthKundaliScreen(
                             Text(state.error!!, color = MaterialTheme.colorScheme.error)
                         }
                     } else {
-                        Crossfade(targetState = activeTab, label = "TabTransition") { tab ->
-                            when (tab) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            verticalAlignment = Alignment.Top
+                        ) { page ->
+                            when (page) {
                                 0 -> BirthInfoTab(state, viewModel, lang, valueFontWeight)
                                 1 -> BirthKundaliTab(state, sessionToken)
                                 2 -> BirthDashaTab(state, viewModel, selectedL1, selectedL2, valueFontWeight)
@@ -540,3 +608,90 @@ fun BirthDashaPeriodItem(period: DashaPeriod, clickable: Boolean, valueFontWeigh
         }
     }
 }
+
+@Composable
+fun BirthStyleSelectorDialog(
+    onDismiss: () -> Unit,
+    currentStyle: String,
+    onStyleSelected: (String) -> Unit,
+    lang: String
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    TranslationUtils.translate("Chart Style", lang),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val styles = listOf("north", "south", "east")
+                    styles.forEach { style ->
+                        BirthStyleOption(
+                            style = style,
+                            isSelected = style == currentStyle,
+                            onClick = { onStyleSelected(style) },
+                            lang = lang,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text(TranslationUtils.translate("Cancel", lang))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BirthStyleOption(
+    style: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    lang: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        selected = isSelected,
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        ),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(modifier = Modifier.size(48.dp).padding(4.dp), contentAlignment = Alignment.Center) {
+                when (style) {
+                    "north" -> NorthIndianChartIcon(color = LocalContentColor.current)
+                    "south" -> SouthIndianChartIcon(color = LocalContentColor.current)
+                    "east" -> EastIndianChartIcon(color = LocalContentColor.current)
+                }
+            }
+            Text(
+                text = TranslationUtils.translate(style.replaceFirstChar { it.uppercase() }, lang),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
+    }
+}
+

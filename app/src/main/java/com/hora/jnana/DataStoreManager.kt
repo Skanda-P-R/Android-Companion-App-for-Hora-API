@@ -56,11 +56,11 @@ class DataStoreManager(private val context: Context) {
     }
 
     val themeFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_THEME] ?: "blue"
+        prefs[KEY_THEME] ?: "green"
     }
 
     val themeModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_THEME_MODE] ?: "system"
+        prefs[KEY_THEME_MODE] ?: "light"
     }
 
     val dashaLevelFlow: Flow<Int> = context.dataStore.data.map { prefs ->

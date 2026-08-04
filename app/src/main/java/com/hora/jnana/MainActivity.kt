@@ -48,8 +48,8 @@ class MainActivity : ComponentActivity() {
         scheduleBackgroundUpdates()
         val dataStoreManager = DataStoreManager(this)
         setContent {
-            val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "blue")
-            val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "system")
+            val currentTheme by dataStoreManager.themeFlow.collectAsState(initial = "green")
+            val currentThemeMode by dataStoreManager.themeModeFlow.collectAsState(initial = "light")
             HoraJnanaTheme(themeName = currentTheme, themeMode = currentThemeMode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     AppNavigation(this)

@@ -40,7 +40,8 @@ data class SavedKundali(
     val lon: Double?,
     val dashaResponse: DashaResponse,
     val chartUrl: String?,
-    val svgContent: String? = null
+     val svgContent: String? = null,
+    val chartStyle: String = "south"
 )
 
 data class BirthState(
@@ -56,7 +57,8 @@ data class BirthState(
     val inputLat: Double? = null,
     val inputLon: Double? = null,
     val locations: List<LocationData> = emptyList(),
-    val isFetchingLocations: Boolean = false
+    val isFetchingLocations: Boolean = false,
+    val chartStyle: String = "south"
 )
 
 class BirthViewModel(
@@ -87,6 +89,8 @@ class BirthViewModel(
     private var lastDate: String? = null
     private var lastTime: String? = null
     private var lastPersonName: String? = null
+    private var lastChartStyle: String? = null
+    private var lastDepth: Int? = null
 
     fun fetchData(
         lat: Double?,
@@ -101,17 +105,31 @@ class BirthViewModel(
         chartStyle: String,
         sessionToken: String?
     ) {
-        // Skip if everything is identical
-        if (lat == lastLat && lon == lastLon && location == lastLocName && date == lastDate && time == lastTime && name == lastPersonName) return
+        val sameParams = lat == lastLat && lon == lastLon && location == lastLocName && 
+                         date == lastDate && time == lastTime && name == lastPersonName &&
+                         chartStyle == lastChartStyle && depth == lastDepth
+        if (sameParams) return
 
         if (!NetworkUtils.isOnline(context)) {
             _state.value = _state.value.copy(error = "Internet connection is required to fetch new information")
             return
         }
 
-        // Skip if only minor coordinate drift
+        // Check if only chart style changed
+        val onlyChartStyleChanged = lat == lastLat && lon == lastLon && location == lastLocName && 
+                                   date == lastDate && time == lastTime && name == lastPersonName &&
+                                   depth == lastDepth && chartStyle != lastChartStyle
+
+        if (onlyChartStyleChanged) {
+            updateOnlyChart(lat, lon, location, date, time, name, lang, apiBase, chartStyle, sessionToken)
+            lastChartStyle = chartStyle
+            return
+        }
+
+        // Skip if only minor coordinate drift and nothing else changed
         if (!LocationUtils.isSignificantChange(lastLat, lastLon, lat, lon) && 
-            location == lastLocName && date == lastDate && time == lastTime && name == lastPersonName) {
+            location == lastLocName && date == lastDate && time == lastTime && 
+            name == lastPersonName && chartStyle == lastChartStyle) {
             lastLat = lat
             lastLon = lon
             return
@@ -125,6 +143,8 @@ class BirthViewModel(
             lastDate = date
             lastTime = time
             lastPersonName = name
+            lastChartStyle = chartStyle
+            lastDepth = depth
 
             _state.value = _state.value.copy(
                 isLoading = true, 
@@ -134,7 +154,8 @@ class BirthViewModel(
                 inputTime = time,
                 inputLocationName = location,
                 inputLat = lat,
-                inputLon = lon
+                inputLon = lon,
+                chartStyle = chartStyle
             )
             _chartLoaded.value = false
             _selectedL1.value = null
@@ -203,6 +224,56 @@ class BirthViewModel(
         _selectedL2.value = period
     }
 
+    private fun updateOnlyChart(
+        lat: Double?,
+        lon: Double?,
+        location: String?,
+        date: String,
+        time: String,
+        name: String,
+        lang: String,
+        apiBase: String,
+        chartStyle: String,
+        sessionToken: String?
+    ) {
+        val apiLang = if (lang == "kn") "kan" else "en"
+        val normalizedBase = if (apiBase.endsWith("/")) apiBase else "$apiBase/"
+
+        _state.value = _state.value.copy(chartStyle = chartStyle, isLoading = true)
+        _chartLoaded.value = false
+
+        viewModelScope.launch {
+            val svgResult = repo.fetchBirthKundaliSvg(lat, lon, location, date, time, name, lang, chartStyle)
+            _chartLoaded.value = true
+            
+            val chartUrl = buildString {
+                append("${normalizedBase}api/v1/kundali/birth/svg?")
+                if (location != null) {
+                    append("location=${URLEncoder.encode(location, "UTF-8")}")
+                } else if (lat != null && lon != null) {
+                    val fLat = LocationUtils.formatCoord(lat)
+                    val fLon = LocationUtils.formatCoord(lon)
+                    append("lat=$fLat&lon=$fLon")
+                } else {
+                    append("lat=12.9716&lon=77.5946")
+                }
+                append("&date=$date")
+                append("&time=$time")
+                if (name.isNotEmpty()) {
+                    append("&name=${URLEncoder.encode(name, "UTF-8")}")
+                }
+                append("&lang=$apiLang")
+                append("&chart_style=$chartStyle")
+            }
+
+            _state.value = _state.value.copy(
+                isLoading = false,
+                chartUrl = chartUrl,
+                svgContent = svgResult.getOrNull()
+            )
+        }
+    }
+
     fun fetchLocations() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isFetchingLocations = true)
@@ -240,7 +311,8 @@ class BirthViewModel(
                     lon = currentState.inputLon,
                     dashaResponse = dasha,
                     chartUrl = currentState.chartUrl,
-                    svgContent = currentState.svgContent
+                    svgContent = currentState.svgContent,
+                    chartStyle = currentState.chartStyle
                 )
                 
                 val json = savedKundaliAdapter.toJson(savedData)
@@ -341,8 +413,10 @@ class BirthViewModel(
                 inputTime = savedData.time,
                 inputLocationName = savedData.locationName,
                 inputLat = savedData.lat,
-                inputLon = savedData.lon
+                inputLon = savedData.lon,
+                chartStyle = savedData.chartStyle
             )
+            lastChartStyle = savedData.chartStyle
             onResult(true, null)
         } catch (e: Exception) {
             onResult(false, e.message)
@@ -357,5 +431,20 @@ class BirthViewModel(
         val days = remainingAfterMonths.toInt()
         
         return "${years}y ${months}m ${days}d"
+    }
+
+    fun resetState() {
+        fetchJob?.cancel()
+        _state.value = BirthState(locations = _state.value.locations) // Keep locations
+        _selectedL1.value = null
+        _selectedL2.value = null
+        lastLat = null
+        lastLon = null
+        lastLocName = null
+        lastDate = null
+        lastTime = null
+        lastPersonName = null
+        lastChartStyle = null
+        lastDepth = null
     }
 }

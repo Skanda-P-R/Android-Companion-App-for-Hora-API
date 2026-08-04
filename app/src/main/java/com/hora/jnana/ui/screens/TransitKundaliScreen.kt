@@ -1,32 +1,41 @@
 package com.hora.jnana.ui.screens
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.EditLocation
+import androidx.compose.material.icons.filled.Grid3x3
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.hora.jnana.models.DashaPeriod
 import com.hora.jnana.utils.TranslationUtils
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TransitKundaliScreen(
     navController: NavController,
@@ -42,15 +51,25 @@ fun TransitKundaliScreen(
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedTime by remember { mutableStateOf(Calendar.getInstance()) }
     
+    // Local overrides
+    var localLat by remember { mutableStateOf(location?.first) }
+    var localLon by remember { mutableStateOf(location?.second) }
+    var localLocName by remember { mutableStateOf(locationName) }
+    var localChartStyle by remember { mutableStateOf(chartStyle) }
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showLocationSelector by remember { mutableStateOf(false) }
+    var showStyleSelector by remember { mutableStateOf(false) }
+
     val datePickerState = rememberDatePickerState()
 
     val state by viewModel.state.collectAsState()
     val selectedL1 by viewModel.selectedL1.collectAsState()
     val selectedL2 by viewModel.selectedL2.collectAsState()
 
-    var activeTab by remember { mutableIntStateOf(0) } // 0: Info, 1: Kundali, 2: Dasha
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val coroutineScope = rememberCoroutineScope()
 
     val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val sdfTime = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -58,18 +77,22 @@ fun TransitKundaliScreen(
 
     val valueFontWeight = if (lang == "kn") FontWeight.Normal else FontWeight.Bold
 
+    LaunchedEffect(Unit) {
+        viewModel.fetchLocations()
+    }
+
     // Initial and on-change fetch
-    LaunchedEffect(selectedDate, selectedTime, location, locationName, dashaLevel, chartStyle) {
+    LaunchedEffect(selectedDate, selectedTime, localLat, localLon, localLocName, dashaLevel, localChartStyle) {
         viewModel.fetchData(
-            lat = location?.first,
-            lon = location?.second,
-            location = locationName,
+            lat = localLat,
+            lon = localLon,
+            location = localLocName,
             date = sdfDate.format(selectedDate.time),
             time = sdfTime.format(selectedTime.time),
             lang = lang,
             apiBase = apiBase,
             depth = dashaLevel,
-            chartStyle = chartStyle,
+            chartStyle = localChartStyle,
             sessionToken = sessionToken
         )
     }
@@ -107,6 +130,32 @@ fun TransitKundaliScreen(
         )
     }
 
+    if (showLocationSelector) {
+        TransitLocationSelectorDialog(
+            onDismiss = { showLocationSelector = false },
+            locations = state.locations,
+            onLocationSelected = { loc ->
+                localLat = loc.latitude
+                localLon = loc.longitude
+                localLocName = loc.name
+                showLocationSelector = false
+            },
+            lang = lang
+        )
+    }
+
+    if (showStyleSelector) {
+        TransitStyleSelectorDialog(
+            onDismiss = { showStyleSelector = false },
+            currentStyle = localChartStyle,
+            onStyleSelected = { style ->
+                localChartStyle = style
+                showStyleSelector = false
+            },
+            lang = lang
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -120,33 +169,69 @@ fun TransitKundaliScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            // Date & Time Selectors
-            Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                Card(modifier = Modifier.weight(1f).padding(4.dp).clickable { showDatePicker = true }) {
-                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(displayDate.format(selectedDate.time), style = MaterialTheme.typography.labelSmall)
+            // Selectors
+            Column(modifier = Modifier.padding(8.dp)) {
+                // First Row: Date & Time
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Card(modifier = Modifier.weight(1f).padding(4.dp).clickable { showDatePicker = true }) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(displayDate.format(selectedDate.time), style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    Card(modifier = Modifier.weight(1f).padding(4.dp).clickable { showTimePicker = true }) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(sdfTime.format(selectedTime.time), style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
-                Card(modifier = Modifier.weight(1f).padding(4.dp).clickable { showTimePicker = true }) {
-                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(sdfTime.format(selectedTime.time), style = MaterialTheme.typography.labelSmall)
+                // Second Row: Location & Chart Style
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Card(modifier = Modifier.weight(1f).padding(4.dp).clickable { showLocationSelector = true }) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.EditLocation, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = localLocName ?: TranslationUtils.translate("Location", lang),
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                    Card(modifier = Modifier.weight(1f).padding(4.dp).clickable { showStyleSelector = true }) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Grid3x3, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = TranslationUtils.translate(localChartStyle.replaceFirstChar { it.uppercase() }, lang),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
                 }
             }
 
             // Tabs
-            TabRow(selectedTabIndex = activeTab) {
-                Tab(selected = activeTab == 0, onClick = { activeTab = 0 }) {
+            TabRow(selectedTabIndex = pagerState.currentPage) {
+                Tab(
+                    selected = pagerState.currentPage == 0,
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } }
+                ) {
                     Text(text = TranslationUtils.translate("Info", lang), modifier = Modifier.padding(16.dp))
                 }
-                Tab(selected = activeTab == 1, onClick = { activeTab = 1 }) {
+                Tab(
+                    selected = pagerState.currentPage == 1,
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } }
+                ) {
                     Text(text = TranslationUtils.translate("Kundali", lang), modifier = Modifier.padding(16.dp))
                 }
-                Tab(selected = activeTab == 2, onClick = { activeTab = 2 }) {
+                Tab(
+                    selected = pagerState.currentPage == 2,
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
+                ) {
                     Text(text = TranslationUtils.translate("Dasha", lang), modifier = Modifier.padding(16.dp))
                 }
             }
@@ -161,8 +246,12 @@ fun TransitKundaliScreen(
                         Text(state.error!!, color = MaterialTheme.colorScheme.error)
                     }
                 } else {
-                    Crossfade(targetState = activeTab, label = "TabTransition") { tab ->
-                        when (tab) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.Top
+                    ) { page ->
+                        when (page) {
                             0 -> InfoTab(state, viewModel, lang, valueFontWeight)
                             1 -> KundaliTab(state, sessionToken)
                             2 -> DashaTab(state, viewModel, selectedL1, selectedL2, valueFontWeight)
@@ -170,6 +259,133 @@ fun TransitKundaliScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TransitLocationSelectorDialog(
+    onDismiss: () -> Unit,
+    locations: List<com.hora.jnana.models.LocationData>,
+    onLocationSelected: (com.hora.jnana.models.LocationData) -> Unit,
+    lang: String
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filtered = remember(searchQuery, locations) {
+        locations.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(TranslationUtils.translate("Select Location", lang)) },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 400.dp)) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text(TranslationUtils.translate("Search Location", lang)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    filtered.take(20).forEach { loc ->
+                        ListItem(
+                            headlineContent = { Text(loc.name) },
+                            modifier = Modifier.clickable { onLocationSelected(loc) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(TranslationUtils.translate("Cancel", lang)) }
+        }
+    )
+}
+
+@Composable
+fun TransitStyleSelectorDialog(
+    onDismiss: () -> Unit,
+    currentStyle: String,
+    onStyleSelected: (String) -> Unit,
+    lang: String
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    TranslationUtils.translate("Chart Style", lang),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val styles = listOf("north", "south", "east")
+                    styles.forEach { style ->
+                        TransitStyleOption(
+                            style = style,
+                            isSelected = style == currentStyle,
+                            onClick = { onStyleSelected(style) },
+                            lang = lang,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text(TranslationUtils.translate("Cancel", lang))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TransitStyleOption(
+    style: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    lang: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        selected = isSelected,
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        ),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(modifier = Modifier.size(48.dp).padding(4.dp), contentAlignment = Alignment.Center) {
+                when (style) {
+                    "north" -> NorthIndianChartIcon(color = LocalContentColor.current)
+                    "south" -> SouthIndianChartIcon(color = LocalContentColor.current)
+                    "east" -> EastIndianChartIcon(color = LocalContentColor.current)
+                }
+            }
+            Text(
+                text = TranslationUtils.translate(style.replaceFirstChar { it.uppercase() }, lang),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
         }
     }
 }
