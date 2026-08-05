@@ -63,7 +63,7 @@ fun PanchangaDetailScreen(
             TopAppBar(
                 title = { Text(TranslationUtils.translate("Panchanga", lang)) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }

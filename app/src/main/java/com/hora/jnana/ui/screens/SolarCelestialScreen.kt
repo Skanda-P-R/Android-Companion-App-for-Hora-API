@@ -71,7 +71,7 @@ fun SolarCelestialScreen(
             TopAppBar(
                 title = { Text(TranslationUtils.translate("Solar & Celestial", lang)) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }

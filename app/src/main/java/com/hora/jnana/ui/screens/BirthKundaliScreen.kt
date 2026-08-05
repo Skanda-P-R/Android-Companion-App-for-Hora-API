@@ -203,7 +203,7 @@ fun BirthKundaliScreen(
                 title = { Text(TranslationUtils.translate("Birth Kundali", lang)) },
                 navigationIcon = {
                     IconButton(onClick = { 
-                        if (showChart) showChart = false else navController.popBackStack() 
+                        if (showChart) showChart = false else navController.navigateUp() 
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }

@@ -87,7 +87,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text(if (currentLang == "kn") "ಸೇಟಿಂಗ್ಸ್" else "Settings") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -317,7 +317,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(if (currentLang == "kn") "ನಮ್ಮ ಬಗ್ಗೆ" else "About", style = MaterialTheme.typography.titleMedium)
-            Text("HoraJnana v0.8.0", style = MaterialTheme.typography.bodyMedium)
+            Text("HoraJnana v0.8.1", style = MaterialTheme.typography.bodyMedium)
             
             Spacer(modifier = Modifier.height(8.dp))
             

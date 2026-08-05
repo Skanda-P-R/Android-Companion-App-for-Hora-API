@@ -82,7 +82,7 @@ fun LocationsScreen(
                 },
                 navigationIcon = {
                     if (selectedLocations.isEmpty()) {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = { navController.navigateUp() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     } else {
@@ -134,7 +134,7 @@ fun LocationsScreen(
                                 if (selectedLocations.isEmpty()) {
                                     scope.launch {
                                         dataStoreManager.saveLocationMode("gps")
-                                        navController.popBackStack()
+                                        navController.navigateUp()
                                     }
                                 }
                             },
@@ -150,7 +150,7 @@ fun LocationsScreen(
                                 if (selectedLocations.isEmpty()) {
                                     scope.launch {
                                         dataStoreManager.saveLocation(loc.latitude, loc.longitude, loc.name, "manual")
-                                        navController.popBackStack()
+                                        navController.navigateUp()
                                     }
                                 } else {
                                     selectedLocations = if (isSelected) {

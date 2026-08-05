@@ -161,7 +161,7 @@ fun TransitKundaliScreen(
             TopAppBar(
                 title = { Text(TranslationUtils.translate("Transit Kundali", lang)) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
