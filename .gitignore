@@ -4,6 +4,7 @@ build/
 app/build/
 .cxx/
 local.properties
+.kotlin/
 
 # IDE - Android Studio / IntelliJ
 .idea/
